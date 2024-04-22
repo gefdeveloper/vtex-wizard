@@ -7,7 +7,7 @@ from telegram.ext import (
     filters,
 )
 from common.log import logger
-import os, asyncio
+import os, asyncio, time
 from bot.service import save_images_from_excel, create_excel_non_working_urls
 
 
@@ -55,8 +55,9 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # df = pd.read_excel("./excel-files/image/image-url.xlsx")
     user = update.message.from_user
     await update.message.reply_text("Sending downloaded images...")
-    # Crear una carpeta con el nombre de usuario para guardar las imágenes
-    folder_path = f"./media/{user.first_name}"
+    # Crear una carpeta con el nombre de usuario y la hora actual para guardar las imágenes
+    folder_name = f"{user.first_name}_{int(time.time())}"  
+    folder_path = os.path.join("./media", folder_name)
     os.makedirs(folder_path, exist_ok=True)
     # Descargar las imágenes
     save_images_from_excel("./excel-files/image/image-url.xlsx", folder_path)
