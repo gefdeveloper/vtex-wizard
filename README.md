@@ -15,13 +15,13 @@ To run this project, you'll need to add the following environment variables to y
 Clone the project
 
 ```bash
-$ git clone https://github.com/Geffrerson7/silabuz-yape-telegram-bot.git
+$ git clone https://github.com/Geffrerson7/vtex-wizard-telegram-bot.git
 ```
 
 Navigate to the project directory
 
 ```bash
-$ cd silabuz-yape-telegram-bot
+$ cd vtex-wizard-telegram-bot
 ```
 
 Create a virtual environment
