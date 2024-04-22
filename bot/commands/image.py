@@ -61,16 +61,10 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     os.makedirs(folder_path, exist_ok=True)
     # Descargar las imágenes
     save_images_from_excel("./excel-files/image/image-url.xlsx", folder_path)
-    # Crear un excel con las urls que no funcionan
-    create_excel_non_working_urls(
-        "./excel-files/image/image-url.xlsx",
-        "./excel-files/image",
-    )
 
     # Enviar las imágenes
     image_files = os.listdir(folder_path)
     for file_name in image_files:
-        print(file_name)
         image_path = os.path.join(folder_path, file_name)
         try:
             await context.bot.send_document(
@@ -84,14 +78,24 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text(
             f"Sending the image {file_name} timed out: {e}"
         )
-            break 
         except Exception as e:
             await update.message.reply_text(
                 f"An error occurred while sending the image {file_name}: {e}"
             )
         await asyncio.sleep(3)
-    # Enviar el excel con las urls que no funcionan
+    await update.message.reply_text("Do you want to Excel file with failed URLs?/failed_url or /not")
+    return IMAGE_EXCEL_FILE 
+
+async def send_failed_urls_excel_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Download images from URLs provided in an Excel file."""
+    # df = pd.read_excel("./excel-files/image/image-url.xlsx")
+    # Crear un excel con las urls que no funcionan
     await update.message.reply_text("Sending failed_urls.xlsx")
+    create_excel_non_working_urls(
+        "./excel-files/image/image-url.xlsx",
+        "./excel-files/image",
+    )
+    # Enviar el excel con las urls que no funcionan
     await context.bot.send_document(
         chat_id=update.message.chat_id,
         document=open("./excel-files/image/failed_urls.xlsx", "rb"),
@@ -118,6 +122,7 @@ download_img_conv_handler = ConversationHandler(
             MessageHandler(filters.ATTACHMENT, save_image_excel),
             CommandHandler("yes", download_image),
             CommandHandler("not", start_download_image),
+            CommandHandler("failed_url", send_failed_urls_excel_file)
         ],
     },
     fallbacks=[CommandHandler("cancel_img", cancel_download_image)],
