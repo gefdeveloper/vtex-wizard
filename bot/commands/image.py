@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, error
 from telegram.ext import (
     ContextTypes,
     ConversationHandler,
@@ -77,7 +77,13 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 document=open(image_path, "rb"),
                 filename=file_name,
                 disable_notification=True,
+                write_timeout=25.0
             )
+        except error.TimedOut as e:
+            await update.message.reply_text(
+            f"Sending the image {file_name} timed out: {e}"
+        )
+            break 
         except Exception as e:
             await update.message.reply_text(
                 f"An error occurred while sending the image {file_name}: {e}"
