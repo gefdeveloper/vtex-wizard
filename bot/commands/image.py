@@ -7,11 +7,11 @@ from telegram.ext import (
     filters,
 )
 from common.log import logger
-import os, asyncio, time
+import os, asyncio, time, traceback
 from bot.service import save_images_from_excel, create_excel_non_working_urls
 
 
-IMAGE_EXCEL_FILE = range(1)
+IMAGE_EXCEL_FILE, DOWNLOAD_CONCLUSION_STATE = range(1)
 
 
 async def start_download_image(
@@ -56,7 +56,7 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user = update.message.from_user
     await update.message.reply_text("Sending downloaded images...")
     # Crear una carpeta con el nombre de usuario y la hora actual para guardar las imágenes
-    folder_name = f"{user.first_name}_{int(time.time())}"  
+    folder_name = f"{user.first_name}_{int(time.time())}"
     folder_path = os.path.join("./media", folder_name)
     os.makedirs(folder_path, exist_ok=True)
     # Descargar las imágenes
@@ -72,21 +72,27 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 document=open(image_path, "rb"),
                 filename=file_name,
                 disable_notification=True,
-                write_timeout=25.0
+                write_timeout=35.0,
             )
         except error.TimedOut as e:
             await update.message.reply_text(
-            f"Sending the image {file_name} timed out: {e}"
-        )
+                f"Sending the image {file_name} timed out: {e}"
+            )
+            continue
         except Exception as e:
             await update.message.reply_text(
                 f"An error occurred while sending the image {file_name}: {e}"
             )
         await asyncio.sleep(3)
-    await update.message.reply_text("Do you want to Excel file with failed URLs?/failed_url or /not")
-    return IMAGE_EXCEL_FILE 
+    await update.message.reply_text(
+        "Do you want to Excel file with failed URLs?/failed_url or /not"
+    )
+    return IMAGE_EXCEL_FILE
 
-async def send_failed_urls_excel_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+async def send_failed_urls_excel_file(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Download images from URLs provided in an Excel file."""
     # df = pd.read_excel("./excel-files/image/image-url.xlsx")
     # Crear un excel con las urls que no funcionan
@@ -122,7 +128,7 @@ download_img_conv_handler = ConversationHandler(
             MessageHandler(filters.ATTACHMENT, save_image_excel),
             CommandHandler("yes", download_image),
             CommandHandler("not", start_download_image),
-            CommandHandler("failed_url", send_failed_urls_excel_file)
+            CommandHandler("failed_url", send_failed_urls_excel_file),
         ],
     },
     fallbacks=[CommandHandler("cancel_img", cancel_download_image)],
