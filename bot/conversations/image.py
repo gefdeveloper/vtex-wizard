@@ -7,11 +7,11 @@ from telegram.ext import (
     filters,
 )
 from common.log import logger
-import os, asyncio, time, traceback
+import os, asyncio, time
 from bot.service import save_images_from_excel, create_excel_non_working_urls
 
 
-IMAGE_EXCEL_FILE = range(1)
+IMAGE_EXCEL_FILE, IMAGE, FAILED_URL_EXCEL_FAILED = range(3)
 
 
 async def start_download_image(
@@ -45,9 +45,9 @@ async def save_image_excel(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     logger.info("File of %s: %s", user.first_name, "image-url.xlsx")
     await update.message.reply_text("Excel file saved!")
-    await update.message.reply_text("Do you want to download images?/yes or /not")
+    await update.message.reply_text("Do you want to download images?/yes or /skip")
 
-    return IMAGE_EXCEL_FILE
+    return IMAGE
 
 
 async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -85,10 +85,17 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
         await asyncio.sleep(3)
     await update.message.reply_text(
-        "Do you want to Excel file with failed URLs?/failed_url or /not"
+        "Do you want to Excel file with failed URLs?/failed_url or /cancel_img"
     )
-    return IMAGE_EXCEL_FILE
+    return FAILED_URL_EXCEL_FAILED
 
+
+async def skip_download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Download images from URLs provided in an Excel file."""
+    await update.message.reply_text(
+        "Do you want to Excel file with failed URLs?/failed_url or /cancel_img"
+    )
+    return FAILED_URL_EXCEL_FAILED
 
 async def send_failed_urls_excel_file(
     update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -125,11 +132,15 @@ download_img_conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start_img", start_download_image)],
     states={
         IMAGE_EXCEL_FILE: [
-            MessageHandler(filters.ATTACHMENT, save_image_excel),
-            CommandHandler("yes", download_image),
-            CommandHandler("not", start_download_image),
-            CommandHandler("failed_url", send_failed_urls_excel_file),
+            MessageHandler(filters.ATTACHMENT, save_image_excel),   
         ],
+        IMAGE:[
+            CommandHandler("yes", download_image),
+            CommandHandler("skip", skip_download_image),
+        ],
+        FAILED_URL_EXCEL_FAILED:[
+            CommandHandler("failed_url", send_failed_urls_excel_file),
+        ]
     },
     fallbacks=[CommandHandler("cancel_img", cancel_download_image)],
 )
