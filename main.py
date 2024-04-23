@@ -9,10 +9,10 @@ from telegram.ext import (
     filters,
 )
 from bot.handlers import error_handler, text_handler, unknown_command
-from bot.commands.ean import ean_conv_handler
-from bot.commands.description import description_conv_handler
-from bot.commands.image import download_img_conv_handler
-from bot.commands.format import raw_image_excel_file_conv_handler
+from bot.conversations.ean import ean_conv_handler
+from bot.conversations.description import description_conv_handler
+from bot.conversations.image import download_img_conv_handler
+from bot.conversations.format import raw_image_excel_file_conv_handler
 
 
 def add_handlers(dp):
