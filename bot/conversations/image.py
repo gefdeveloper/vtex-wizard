@@ -11,7 +11,7 @@ import os, asyncio, time
 from bot.service import save_images_from_excel, create_excel_non_working_urls
 
 
-IMAGE_EXCEL_FILE, IMAGE, FAILED_URL_EXCEL_FAILED = range(3)
+IMAGE_EXCEL_FILE, DOWNLOAD_IMAGE, SENDING_IMAGE, FAILED_URL_EXCEL_FAILED = range(4)
 
 
 async def start_download_image(
@@ -45,24 +45,33 @@ async def save_image_excel(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     logger.info("File of %s: %s", user.first_name, "image-url.xlsx")
     await update.message.reply_text("Excel file saved!")
-    await update.message.reply_text("Do you want to download images?/yes or /skip")
+    await update.message.reply_text("Do you want to download images?/download or /skip_download")
 
-    return IMAGE
+    return DOWNLOAD_IMAGE
 
 
 async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Download images from URLs provided in an Excel file."""
-    # df = pd.read_excel("./excel-files/image/image-url.xlsx")
+    await update.message.reply_text("Downloading images...")
     user = update.message.from_user
-    await update.message.reply_text("Sending downloaded images...")
     # Crear una carpeta con el nombre de usuario y la hora actual para guardar las imágenes
     folder_name = f"{user.first_name}_{int(time.time())}"
     folder_path = os.path.join("./media", folder_name)
     os.makedirs(folder_path, exist_ok=True)
     # Descargar las imágenes
     save_images_from_excel("./excel-files/image/image-url.xlsx", folder_path)
+    context.user_data["image_folder_path"] = folder_path
+    await update.message.reply_text("Images downloaded succesfully")
+    await update.message.reply_text(
+        "Do you want me to send you the images?/send or /skip_send"
+    )
+    return SENDING_IMAGE
 
+
+async def send_download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Download images from URLs provided in an Excel file."""
     # Enviar las imágenes
+    folder_path = context.user_data["image_folder_path"] 
     image_files = os.listdir(folder_path)
     for file_name in image_files:
         image_path = os.path.join(folder_path, file_name)
@@ -97,11 +106,19 @@ async def skip_download_image(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     return FAILED_URL_EXCEL_FAILED
 
+
+async def skip_send_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Download images from URLs provided in an Excel file."""
+    await update.message.reply_text(
+        "Do you want to Excel file with failed URLs?/failed_url or /cancel_img"
+    )
+    return FAILED_URL_EXCEL_FAILED
+
+
 async def send_failed_urls_excel_file(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     """Download images from URLs provided in an Excel file."""
-    # df = pd.read_excel("./excel-files/image/image-url.xlsx")
     # Crear un excel con las urls que no funcionan
     await update.message.reply_text("Sending failed_urls.xlsx")
     create_excel_non_working_urls(
@@ -134,9 +151,13 @@ download_img_conv_handler = ConversationHandler(
         IMAGE_EXCEL_FILE: [
             MessageHandler(filters.ATTACHMENT, save_image_excel),   
         ],
-        IMAGE:[
-            CommandHandler("yes", download_image),
-            CommandHandler("skip", skip_download_image),
+        DOWNLOAD_IMAGE:[
+            CommandHandler("download", download_image),
+            CommandHandler("skip_download", skip_download_image),
+        ],
+        SENDING_IMAGE:[
+            CommandHandler("send", send_download_image),
+            CommandHandler("skip_send", skip_send_image),
         ],
         FAILED_URL_EXCEL_FAILED:[
             CommandHandler("failed_url", send_failed_urls_excel_file),
