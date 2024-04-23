@@ -11,7 +11,7 @@ import os, asyncio, time, traceback
 from bot.service import save_images_from_excel, create_excel_non_working_urls
 
 
-IMAGE_EXCEL_FILE, DOWNLOAD_CONCLUSION_STATE = range(1)
+IMAGE_EXCEL_FILE = range(1)
 
 
 async def start_download_image(
