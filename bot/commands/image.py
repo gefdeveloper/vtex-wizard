@@ -7,11 +7,11 @@ from telegram.ext import (
     filters,
 )
 from common.log import logger
-import os, asyncio, time
+import os, asyncio, time, traceback
 from bot.service import save_images_from_excel, create_excel_non_working_urls
 
 
-IMAGE_EXCEL_FILE = range(1)
+IMAGE_EXCEL_FILE, DOWNLOAD_CONCLUSION_STATE = range(1)
 
 
 async def start_download_image(
@@ -72,7 +72,7 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 document=open(image_path, "rb"),
                 filename=file_name,
                 disable_notification=True,
-                write_timeout=25.0,
+                write_timeout=35.0,
             )
         except error.TimedOut as e:
             await update.message.reply_text(
