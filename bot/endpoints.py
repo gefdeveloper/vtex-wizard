@@ -3,7 +3,7 @@ from telegram import Update
 from bot.ptb import ptb
 from http import HTTPStatus
 from settings import config
-from database.models import Image
+
 
 router = APIRouter()
 
