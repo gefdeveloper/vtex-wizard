@@ -50,7 +50,6 @@ def change_html_to_text():
 
 def procesar_imagen(url, sku, carpeta_destino):
     """Function to download and process an image."""
-
     enlaces_separados = url.split("|")
 
     for i, enlace in enumerate(enlaces_separados, start=1):
@@ -136,6 +135,8 @@ def check_url(url):
             return True
         elif response.status_code == 403:
             return 403
+        elif response.status_code == 404:
+            return 404
     except requests.ConnectionError:
         return False
     
@@ -167,6 +168,14 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                         )
                         print(f"URL no funciona para SKU {sku}: {url}")
                     elif check_url(url) == 403:
+                        urls_no_funcionan.append(
+                            {
+                                "SKU": sku,
+                                "URL": url,
+                                "Comentario": "URL válida, pero no se puede descargar con este programa sino de forma manual.",
+                            }
+                        )
+                    elif check_url(url) == 404:
                         urls_no_funcionan.append(
                             {
                                 "SKU": sku,
