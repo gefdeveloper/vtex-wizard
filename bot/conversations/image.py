@@ -9,7 +9,7 @@ from telegram.ext import (
 from common.log import logger
 import os, asyncio, time
 from bot.service import save_images_from_excel, create_excel_non_working_urls
-from settings.config import BOTHOST
+import shutil
 
 IMAGE_EXCEL_FILE, DOWNLOAD_IMAGE, SENDING_IMAGE, FAILED_URL_EXCEL_FAILED = range(4)
 
@@ -55,7 +55,7 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text("Downloading images...")
     user = update.message.from_user
     # Crear una carpeta con el nombre de usuario y la hora actual para guardar las imágenes
-    folder_name = f"{user.id}_{int(time.time())}"
+    folder_name = f"{user.first_name}_{int(time.time())}"
     folder_path = os.path.join("./media", folder_name)
     os.makedirs(folder_path, exist_ok=True)
     # Descargar las imágenes
@@ -138,6 +138,9 @@ async def cancel_download_image(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     """Cancels and ends the conversation."""
+    #Eliminar carpeta de imagenes descargadas
+    if context.user_data["image_folder_path"]:
+        shutil.rmtree(context.user_data["image_folder_path"])
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
