@@ -18,13 +18,20 @@ async def start_description(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await update.message.reply_text(
         f"Hi {user_name}. I will hold a conversation with you. "
         "Send /cancel_des to stop talking to me.\n\n"
-        "Please, send me the Excel file with descriptions of up to 20MB in size."
     )
-
+    await context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open("./excel-files/examples/description-template.xlsx", "rb"),
+    )
+    await update.message.reply_text(
+        "Please send me this template with the descriptions to correct, with a maximum size of up to 20 MB."
+    )
     return DESCRIPTION_EXCEL_FILE
 
 
-async def format_descriptions_excel_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def format_descriptions_excel_file(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     user = update.message.from_user
     if (
         update.message.effective_attachment.mime_type
@@ -32,7 +39,7 @@ async def format_descriptions_excel_file(update: Update, context: ContextTypes.D
     ):
         await update.message.reply_text("Please send an Excel file.")
         return DESCRIPTION_EXCEL_FILE
-    
+
     new_file = await update.message.effective_attachment.get_file()
     await new_file.download_to_drive("./excel-files/descriptions/description-html.xlsx")
     logger.info("File of %s: %s", user.first_name, "description-html.xlsx")
@@ -61,7 +68,9 @@ async def cancel_description(update: Update, context: ContextTypes.DEFAULT_TYPE)
 description_conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start_des", start_description)],
     states={
-        DESCRIPTION_EXCEL_FILE: [MessageHandler(filters.ATTACHMENT, format_descriptions_excel_file)],
+        DESCRIPTION_EXCEL_FILE: [
+            MessageHandler(filters.ATTACHMENT, format_descriptions_excel_file)
+        ],
     },
     fallbacks=[CommandHandler("cancel_des", cancel_description)],
 )

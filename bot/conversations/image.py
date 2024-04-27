@@ -22,9 +22,14 @@ async def start_download_image(
     await update.message.reply_text(
         f"Hi {user_name}. I will hold a conversation with you. "
         "Send /cancel_img to stop talking to me.\n\n"
-        "Please, send me the Excel file with image URLs of up to 20MB in size."
     )
-
+    await context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open("./excel-files/examples/img-download-template.xlsx", "rb"),
+    )
+    await update.message.reply_text(
+        "Please send me this template with the image URLs to download, with a maximum size of up to 20 MB."
+    )
     return IMAGE_EXCEL_FILE
 
 
@@ -45,7 +50,9 @@ async def save_image_excel(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     logger.info("File of %s: %s", user.first_name, "image-url.xlsx")
     await update.message.reply_text("Excel file saved!")
-    await update.message.reply_text("Do you want to download images?/download or /skip_download")
+    await update.message.reply_text(
+        "Do you want to download images?/download or /skip_download"
+    )
 
     return DOWNLOAD_IMAGE
 
@@ -68,11 +75,13 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     return SENDING_IMAGE
 
 
-async def send_download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def send_download_image(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Download images from URLs provided in an Excel file."""
     # Enviar las imágenes
     folder_path = context.user_data["image_folder_path"]
-    
+
     image_files = os.listdir(folder_path)
     for file_name in image_files:
         image_path = os.path.join(folder_path, file_name)
@@ -99,7 +108,9 @@ async def send_download_image(update: Update, context: ContextTypes.DEFAULT_TYPE
     return FAILED_URL_EXCEL_FAILED
 
 
-async def skip_download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def skip_download_image(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Download images from URLs provided in an Excel file."""
     await update.message.reply_text(
         "Do you want to Excel file with failed URLs?/failed_url or /cancel_img"
@@ -138,8 +149,9 @@ async def cancel_download_image(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     """Cancels and ends the conversation."""
-    #Eliminar carpeta de imagenes descargadas
-    if context.user_data["image_folder_path"]:
+    # Check if the image folder path exists in user data
+    if "image_folder_path" in context.user_data and context.user_data["image_folder_path"] != "":
+        # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
@@ -152,19 +164,19 @@ download_img_conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start_img", start_download_image)],
     states={
         IMAGE_EXCEL_FILE: [
-            MessageHandler(filters.ATTACHMENT, save_image_excel),   
+            MessageHandler(filters.ATTACHMENT, save_image_excel),
         ],
-        DOWNLOAD_IMAGE:[
+        DOWNLOAD_IMAGE: [
             CommandHandler("download", download_image),
             CommandHandler("skip_download", skip_download_image),
         ],
-        SENDING_IMAGE:[
+        SENDING_IMAGE: [
             CommandHandler("send", send_download_image),
             CommandHandler("skip_send", skip_send_image),
         ],
-        FAILED_URL_EXCEL_FAILED:[
+        FAILED_URL_EXCEL_FAILED: [
             CommandHandler("failed_url", send_failed_urls_excel_file),
-        ]
+        ],
     },
     fallbacks=[CommandHandler("cancel_img", cancel_download_image)],
 )
