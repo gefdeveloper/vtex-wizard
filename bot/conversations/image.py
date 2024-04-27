@@ -141,7 +141,10 @@ async def send_failed_urls_excel_file(
         chat_id=update.message.chat_id,
         document=open("./excel-files/image/failed_urls.xlsx", "rb"),
     )
-
+    if "image_folder_path" in context.user_data and context.user_data["image_folder_path"] != "":
+        # Delete the downloaded image folder
+        shutil.rmtree(context.user_data["image_folder_path"])
+    await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 
 

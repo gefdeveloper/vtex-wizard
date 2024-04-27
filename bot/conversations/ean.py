@@ -8,7 +8,6 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from telegram import ReplyKeyboardMarkup
 
 EAN_NUMBER = range(1)
 
@@ -65,7 +64,7 @@ async def ean_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         message = "Here are your EAN codes:\n"
         message += "\n".join(random_numbers_list)
         await update.message.reply_text(message)
-
+    await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 
 
