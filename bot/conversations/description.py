@@ -52,7 +52,7 @@ async def format_descriptions_excel_file(
     await update.message.reply_text(
         "The descriptions have been converted and stored in description-text.xlsx."
     )
-
+    await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 
 
