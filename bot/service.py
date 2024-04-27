@@ -172,7 +172,7 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                             {
                                 "SKU": sku,
                                 "URL": url,
-                                "Comentario": "URL válida, pero no se puede descargar con este programa sino de forma manual.",
+                                "Comentario": "La URL no existe o no se puede descargar con este programa sino de forma manual.",
                             }
                         )
                     elif check_url(url) == 404:
@@ -180,7 +180,7 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                             {
                                 "SKU": sku,
                                 "URL": url,
-                                "Comentario": "URL válida, pero no se puede descargar con este programa sino de forma manual.",
+                                "Comentario": "La URL no existe",
                             }
                         )
             else:
@@ -194,7 +194,7 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
 
         archivo_resultado = os.path.join(carpeta_destino, "failed_urls.xlsx")
         df_urls_no_funcionan.to_excel(archivo_resultado, index=False)
-
+        return len(urls_no_funcionan)
         print(f"Se han guardado las URL que no funcionan en '{archivo_resultado}'.")
     except Exception as e:
         print(f"Error al procesar el archivo Excel: {e}")
