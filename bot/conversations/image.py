@@ -130,18 +130,23 @@ async def send_failed_urls_excel_file(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     """Download images from URLs provided in an Excel file."""
-    # Crear un excel con las urls que no funcionan
-    await update.message.reply_text("Sending failed_urls.xlsx")
-    create_excel_non_working_urls(
+    failed_urls_number = create_excel_non_working_urls(
         "./excel-files/image/image-url.xlsx",
         "./excel-files/image",
     )
-    # Enviar el excel con las urls que no funcionan
-    await context.bot.send_document(
-        chat_id=update.message.chat_id,
-        document=open("./excel-files/image/failed_urls.xlsx", "rb"),
-    )
-    if "image_folder_path" in context.user_data and context.user_data["image_folder_path"] != "":
+    if failed_urls_number == 0:
+        await update.message.reply_text("Failed URLs not found.")
+    else:
+        await update.message.reply_text(f"We found {failed_urls_number} failed URLs.")
+        await context.bot.send_document(
+            chat_id=update.message.chat_id,
+            document=open("./excel-files/image/failed_urls.xlsx", "rb"),
+        )
+
+    if (
+        "image_folder_path" in context.user_data
+        and context.user_data["image_folder_path"] != ""
+    ):
         # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
     await update.message.reply_text("Bye! I hope we can talk again some day.")
@@ -153,9 +158,13 @@ async def cancel_download_image(
 ) -> int:
     """Cancels and ends the conversation."""
     # Check if the image folder path exists in user data
-    if "image_folder_path" in context.user_data and context.user_data["image_folder_path"] != "":
+    if (
+        "image_folder_path" in context.user_data
+        and context.user_data["image_folder_path"] != ""
+    ):
         # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
+        context.user_data["image_folder_path"] = ""
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
