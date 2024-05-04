@@ -64,6 +64,8 @@ async def ean_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         message = "Here are your EAN codes:\n"
         message += "\n".join(random_numbers_list)
         await update.message.reply_text(message)
+    user = update.message.from_user
+    logger.info("User %s canceled the ean conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 
@@ -71,7 +73,7 @@ async def ean_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def cancel_ean(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
+    logger.info("User %s canceled the ean conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
 
     return ConversationHandler.END

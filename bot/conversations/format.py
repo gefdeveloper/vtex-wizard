@@ -58,6 +58,7 @@ async def format_raw_image_excel_file(
     await update.message.reply_text(
         "The formatted Excel file is formatted-excel-file.xlsx."
     )
+    logger.info("User %s canceled the format conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 
@@ -67,7 +68,7 @@ async def cancel_format_image_excel_file(
 ) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
+    logger.info("User %s canceled the format conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 

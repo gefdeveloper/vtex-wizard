@@ -7,29 +7,29 @@ from telegram.ext import (
     filters,
 )
 from common.log import logger
-from bot.service import change_html_to_text
+from bot.service import generate_keywords
 
-DESCRIPTION_EXCEL_FILE = range(1)
+KEYWORDS_EXCEL_FILE = range(1)
 
 
-async def start_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def start_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks excel file with description."""
     user_name = update.effective_user.first_name
     await update.message.reply_text(
         f"Hi {user_name}. I will hold a conversation with you. "
-        "Send /cancel_des to stop talking to me.\n\n"
+        "Send /cancel_key to stop talking to me.\n\n"
     )
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
-        document=open("./excel-files/examples/description-template.xlsx", "rb"),
+        document=open("./excel-files/examples/keywords-template.xlsx", "rb"),
     )
     await update.message.reply_text(
-        "Please send me this template with the descriptions to correct, with a maximum size of up to 20 MB."
+        "Please send me this template with the product names and categories, with a maximum size of up to 20 MB."
     )
-    return DESCRIPTION_EXCEL_FILE
+    return KEYWORDS_EXCEL_FILE
 
 
-async def format_descriptions_excel_file(
+async def create_keywords_excel_file(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     user = update.message.from_user
@@ -38,21 +38,21 @@ async def format_descriptions_excel_file(
         != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ):
         await update.message.reply_text("Please send an Excel file.")
-        return DESCRIPTION_EXCEL_FILE
+        return KEYWORDS_EXCEL_FILE
 
     new_file = await update.message.effective_attachment.get_file()
-    await new_file.download_to_drive("./excel-files/descriptions/description-html.xlsx")
-    logger.info("File of %s: %s", user.first_name, "description-html.xlsx")
+    await new_file.download_to_drive("./excel-files/keywords/products-list.xlsx")
+    logger.info("File of %s: %s", user.first_name, "products-list.xlsx")
     await update.message.reply_text("Excel file saved!")
-    change_html_to_text()
+    generate_keywords()
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
-        document=open("./excel-files/descriptions/description-text.xlsx", "rb"),
+        document=open("./excel-files/keywords/keywords-list.xlsx", "rb"),
     )
     await update.message.reply_text(
-        "The descriptions have been converted and stored in description-text.xlsx."
+        "The keywords have been converted and stored in keywords-list.xlsx."
     )
-    logger.info("User %s canceled the description conversation.", user.first_name)
+    logger.info("User %s canceled the keyword conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
     return ConversationHandler.END
 
@@ -60,18 +60,18 @@ async def format_descriptions_excel_file(
 async def cancel_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
-    logger.info("User %s canceled the description conversation.", user.first_name)
+    logger.info("User %s canceled the keyword conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
 
     return ConversationHandler.END
 
 
-description_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start_des", start_description)],
+keyword_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("start_key", start_keyword)],
     states={
-        DESCRIPTION_EXCEL_FILE: [
-            MessageHandler(filters.ATTACHMENT, format_descriptions_excel_file)
+        KEYWORDS_EXCEL_FILE: [
+            MessageHandler(filters.ATTACHMENT, create_keywords_excel_file)
         ],
     },
-    fallbacks=[CommandHandler("cancel_des", cancel_description)],
+    fallbacks=[CommandHandler("cancel_key", cancel_description)],
 )

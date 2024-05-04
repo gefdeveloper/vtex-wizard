@@ -4,6 +4,9 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from io import BytesIO
 from urllib.parse import urlparse
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
 
 
 def generate_random_numbers(random_numbers_quantity: int):
@@ -30,22 +33,24 @@ def escape_string(input_string: str):
     """Replaces characters '-' with '\-', and characters '.' with '\.'"""
     return re.sub(r"[-.]", lambda x: "\\" + x.group(), input_string)
 
+
 def html_to_text(html):
     """Convert a snippet of HTML into plain text."""
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
     return soup.get_text()
 
+
 def change_html_to_text():
-    """ Read an Excel file containing HTML in a specified column, convert that HTML into plain text
+    """Read an Excel file containing HTML in a specified column, convert that HTML into plain text
     using the html_to_text function, and save the result to a new Excel file."""
-    
+
     df = pd.read_excel("./excel-files/descriptions/description-html.xlsx")
 
     # Aplicar la función html_to_text a cada valor de la columna 'columna_html'
-    df['columna_texto'] = df['columna_html'].apply(html_to_text)
+    df["columna_texto"] = df["columna_html"].apply(html_to_text)
 
     # Guardar el DataFrame resultante en un nuevo archivo Excel
-    df.to_excel('./excel-files/descriptions/description-text.xlsx', index=False)
+    df.to_excel("./excel-files/descriptions/description-text.xlsx", index=False)
 
 
 def procesar_imagen(url, sku, carpeta_destino):
@@ -104,7 +109,7 @@ def save_images_from_excel(archivo_excel, carpeta_destino):
     for index, fila in df.iterrows():
         enlaces_imagen = fila["url"]
         sku = fila["SKU"]
-        if not pd.isna(enlaces_imagen) and enlaces_imagen !="":
+        if not pd.isna(enlaces_imagen) and enlaces_imagen != "":
             procesar_imagen(enlaces_imagen, sku, carpeta_destino)
 
 
@@ -139,7 +144,7 @@ def check_url(url):
             return 404
     except requests.ConnectionError:
         return False
-    
+
 
 def create_excel_non_working_urls(archivo_excel, carpeta_destino):
     """Reads an Excel file containing URLs, checks if they are valid and accessible, and saves the non-working URLs to a new Excel file."""
@@ -204,7 +209,84 @@ def format_image_excel_file():
     """Reads an Excel file with SKU and URL columns, groups the URLs by SKU, and saves the result to a new Excel file."""
     df = pd.read_excel("./excel-files/format/raw-excel-file.xlsx")
 
-    df_grouped = df.groupby('SKU')['url'].apply(lambda x: '|'.join(x)).reset_index()
+    df_grouped = df.groupby("SKU")["url"].apply(lambda x: "|".join(x)).reset_index()
 
     df_grouped.to_excel("./excel-files/format/formatted-excel-file.xlsx", index=False)
 
+
+def identificar_sustantivos(texto, categoria):
+    if isinstance(texto, str):  # Verifica si el texto es una cadena de caracteres
+        texto = texto.replace("/", " ")
+        tokens = word_tokenize(texto)
+        etiquetados = pos_tag(tokens)
+        sustantivos = [
+            palabra.lower()
+            for palabra, etiqueta in etiquetados
+            if etiqueta.startswith("NN")
+            and palabra.lower()
+            not in [
+                "de",
+                "para",
+                "y",
+                "con",
+                "sin",
+                "en",
+                "más",
+                "+",
+                "ml",
+                "–",
+                "gr",
+                "x",
+                "pa++++",
+                "_",
+                "u",
+                "kg",
+                "pcs",
+                "(",
+                ")",
+                '"',
+                "x",
+                "piezas",
+                "pieza",
+                "cm",
+                "mm",
+                "w",
+                "l",
+                "m",
+                "-",
+                "unidades",
+                "und",
+                "unds",
+                "un",
+            ]
+        ]
+        # Agregar la categoría como palabra clave
+        categoria_keywords = [categoria.lower()]
+        sustantivos.extend(categoria_keywords)
+        # sustantivos.extend(keywords_adicionales)
+        return ", ".join(sustantivos)
+    else:
+        return ""
+
+
+def generate_keywords():
+    # Descarga los recursos necesarios de NLTK
+    nltk.download("punkt")
+    nltk.download("averaged_perceptron_tagger")
+
+    # Carga el archivo Excel
+    df = pd.read_excel("./excel-files/keywords/products-list.xlsx")
+
+    # Selecciona las columnas de interés
+    columna_nombre = "Nombre"
+    columna_categoria = "Categoria"
+
+    # Aplica la función a las columnas seleccionadas
+    df["sustantivos"] = df.apply(
+        lambda row: identificar_sustantivos(
+            row[columna_nombre], row[columna_categoria]
+        ),
+        axis=1,
+    )
+    # Guarda el resultado en un nuevo archivo Excel
+    df.to_excel("./excel-files/keywords/keywords-list.xlsx", index=False)
