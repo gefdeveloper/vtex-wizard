@@ -24,10 +24,12 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text += "/start_des - Descriptions excel file edition.\n"
     message_text += "/start_img - Download images from excel file.\n"
     message_text += "/start_format - Format images Excel file.\n"
+    message_text += "/start_key - Keywords generation.\n"
     message_text += "/cancel_ean - Cancel EAN codes generation.\n"
     message_text += "/cancel_des - Cancel descriptions excel file edition.\n"
     message_text += "/cancel_img - Cancel download images from excel file.\n"
     message_text += "/cancel_format - Cancel format images Excel file.\n"
+    message_text += "/cancel_key - Cancel keywords generation.\n"
 
     await update.message.reply_text(message_text)
 
@@ -108,9 +110,11 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     message_text += "/start_des - Descriptions excel file edition.\n"
     message_text += "/start_img - Download images from excel file.\n"
     message_text += "/start_format - Format images Excel file.\n"
+    message_text += "/start_key - Keywords generation.\n"
     message_text += "/cancel_ean - Cancel EAN codes generation.\n"
     message_text += "/cancel_des - Cancel descriptions excel file edition.\n"
     message_text += "/cancel_img - Cancel download images from excel file.\n"
     message_text += "/cancel_format - Cancel format images Excel file.\n"
+    message_text += "/cancel_key - Cancel keywords generation.\n"
     message_text += "/menu - Explanatory menu.\n"
     await update.message.reply_text(message_text)
