@@ -284,6 +284,7 @@ def generate_keywords_excel_file():
     # Descarga los recursos necesarios de NLTK
     nltk.download("punkt")
     nltk.download("averaged_perceptron_tagger")
+    nltk.download('stopwords')
 
     # Carga el archivo Excel
     df = pd.read_excel("./excel-files/keywords/products-list.xlsx")
