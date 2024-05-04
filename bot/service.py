@@ -6,7 +6,7 @@ from io import BytesIO
 from urllib.parse import urlparse
 import nltk
 from nltk.tokenize import word_tokenize
-from nltk.tag import pos_tag
+from nltk.corpus import stopwords
 
 
 def generate_random_numbers(random_numbers_quantity: int):
@@ -214,38 +214,49 @@ def format_image_excel_file():
     df_grouped.to_excel("./excel-files/format/formatted-excel-file.xlsx", index=False)
 
 
-def identificar_sustantivos(texto, categoria):
+
+def create_keywords_of_product_name(texto):
+    # Tokenizar el texto en palabras
+    palabras = word_tokenize(texto)
+
+    # Eliminar palabras vacías (palabras comunes como "el", "es", "y", etc.)
+    palabras_vacias = set(stopwords.words('spanish'))
+    palabras = [palabra.lower() for palabra in palabras if palabra.lower() not in palabras_vacias]
+
+    # Eliminar caracteres especiales usando expresiones regulares
+    palabras = [re.sub(r'[^a-zA-Z0-9áéíóúü]', '', palabra) for palabra in palabras]
+
+    # Eliminar cadenas vacías después de eliminar los caracteres especiales
+    palabras = [palabra for palabra in palabras if palabra]
+
+    # Contar la frecuencia de cada palabra
+    frecuencia_palabras = {}
+    for palabra in palabras:
+        frecuencia_palabras[palabra] = frecuencia_palabras.get(palabra, 0) + 1
+
+    # Ordenar las palabras por frecuencia en orden descendente
+    palabras_ordenadas = sorted(frecuencia_palabras.items(), key=lambda x: x[1], reverse=True)
+
+    # Devolver las 10 palabras clave principales (puedes ajustar este número según sea necesario)
+    return [palabra for palabra, _ in palabras_ordenadas[:20]]
+
+
+def create_keywords(texto, categoria):
     if isinstance(texto, str):  # Verifica si el texto es una cadena de caracteres
         texto = texto.replace("/", " ")
-        tokens = word_tokenize(texto)
-        etiquetados = pos_tag(tokens)
+        # Generar palabras clave utilizando la función generate_keywords
+        keywords = create_keywords_of_product_name(texto)
+        # Filtrar sustantivos y excluir palabras no deseadas
         sustantivos = [
-            palabra.lower()
-            for palabra, etiqueta in etiquetados
-            if etiqueta.startswith("NN")
-            and palabra.lower()
-            not in [
-                "de",
-                "para",
-                "y",
-                "con",
-                "sin",
-                "en",
-                "más",
-                "+",
+            palabra
+            for palabra in keywords
+            if palabra not in [
                 "ml",
                 "–",
                 "gr",
-                "x",
-                "pa++++",
-                "_",
                 "u",
                 "kg",
                 "pcs",
-                "(",
-                ")",
-                '"',
-                "x",
                 "piezas",
                 "pieza",
                 "cm",
@@ -253,23 +264,23 @@ def identificar_sustantivos(texto, categoria):
                 "w",
                 "l",
                 "m",
-                "-",
+                "unidad",
                 "unidades",
                 "und",
                 "unds",
                 "un",
+                "pa",
             ]
         ]
         # Agregar la categoría como palabra clave
         categoria_keywords = [categoria.lower()]
         sustantivos.extend(categoria_keywords)
-        # sustantivos.extend(keywords_adicionales)
         return ", ".join(sustantivos)
     else:
         return ""
 
 
-def generate_keywords():
+def generate_keywords_excel_file():
     # Descarga los recursos necesarios de NLTK
     nltk.download("punkt")
     nltk.download("averaged_perceptron_tagger")
@@ -282,8 +293,8 @@ def generate_keywords():
     columna_categoria = "Categoria"
 
     # Aplica la función a las columnas seleccionadas
-    df["sustantivos"] = df.apply(
-        lambda row: identificar_sustantivos(
+    df["keywords"] = df.apply(
+        lambda row: create_keywords(
             row[columna_nombre], row[columna_categoria]
         ),
         axis=1,

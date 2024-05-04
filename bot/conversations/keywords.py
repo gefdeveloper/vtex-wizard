@@ -7,7 +7,7 @@ from telegram.ext import (
     filters,
 )
 from common.log import logger
-from bot.service import generate_keywords
+from bot.service import generate_keywords_excel_file
 
 KEYWORDS_EXCEL_FILE = range(1)
 
@@ -44,7 +44,7 @@ async def create_keywords_excel_file(
     await new_file.download_to_drive("./excel-files/keywords/products-list.xlsx")
     logger.info("File of %s: %s", user.first_name, "products-list.xlsx")
     await update.message.reply_text("Excel file saved!")
-    generate_keywords()
+    generate_keywords_excel_file()
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("./excel-files/keywords/keywords-list.xlsx", "rb"),
