@@ -302,3 +302,30 @@ def generate_keywords_excel_file():
     )
     # Guarda el resultado en un nuevo archivo Excel
     df.to_excel("./excel-files/keywords/keywords-list.xlsx", index=False)
+
+
+def crop_margins(imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha):
+    # Abrir la imagen
+    imagen = Image.open(imagen_path)
+    
+    # Obtener dimensiones de la imagen
+    ancho, alto = imagen.size
+
+    # Definir el área a recortar (left, upper, right, lower)
+    izquierda = margen_izquierda
+    superior = margen_superior
+    derecha = ancho - margen_derecha
+    inferior = alto - margen_inferior
+
+    # Recortar la imagen
+    imagen_recortada = imagen.crop((izquierda, superior, derecha, inferior))
+
+    return imagen_recortada
+
+
+def save_cropped_image(margen_inferior, margen_superior, margen_izquierda, margen_derecha):
+    # Recortar la imagen
+    imagen_recortada = crop_margins("./media/images/image-to-crop.jpg", margen_inferior, margen_superior, margen_izquierda, margen_derecha)
+
+    # Guardar la imagen recortada
+    imagen_recortada.save('./media/images/cropped-image.jpg')
