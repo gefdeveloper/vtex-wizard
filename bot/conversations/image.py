@@ -149,6 +149,7 @@ async def send_failed_urls_excel_file(
     ):
         # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
+        context.user_data["image_folder_path"] = ""
     user = update.message.from_user
     logger.info("User %s canceled the image conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
