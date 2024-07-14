@@ -53,40 +53,15 @@ Once all of that is done, proceed to start the app
 
 ## Telegram bot's menu
 
-Start EAN codes generation:
+Shows the options menu:
 
 ```bash
-  /start_ean
+  /start
 ```
 
-Start descriptions excel file edition:
+Shows the options to cancel an operation:
 
 ```bash
-  /start_des
+  /cancel
 ```
-
-Start download images from excel file:
-
-```bash
-  /start_img
-```
-
-Cancel EAN codes generation:
-
-```bash
-  /cancel_ean
-```
-
-Cancel descriptions excel file edition:
-
-```bash
-  /cancel_des
-```
-
-Cancel download images from excel file:
-
-```bash
-  /cancel_img
-```
-
 

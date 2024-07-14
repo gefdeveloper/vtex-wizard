@@ -156,8 +156,8 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text = f"Sorry, the entered command is not valid.\n"
-    message_text += "Here is the list of the valñid commands:\n\n"
+    message_text += "Here is the list of the valid commands:\n\n"
     message_text += "/start - Shows the options menu.\n"
-    message_text += "/cancel - List of commands to cancel an operation.\n"
+    message_text += "/cancel - Shows the options to cancel an operation.\n"
 
     await update.message.reply_text(message_text)
