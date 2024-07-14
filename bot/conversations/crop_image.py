@@ -5,23 +5,35 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    CallbackQueryHandler,
 )
 from common.log import logger
 from bot.service import save_cropped_image
+from bot.handlers import SIX, TWELVE
 
-
-GET_IMAGE, GET_TOP_MARGIN, GET_BOTTOM_MARGIN, GET_RIGHT_MARGIN, GET_LEFT_MARGIN, CROP_IMAGE = range(6)
+(
+    GET_IMAGE,
+    GET_TOP_MARGIN,
+    GET_BOTTOM_MARGIN,
+    GET_RIGHT_MARGIN,
+    GET_LEFT_MARGIN,
+    CROP_IMAGE,
+) = range(6)
 
 
 async def start_crop_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks excel file with description."""
     user_name = update.effective_user.first_name
-    await update.message.reply_text(
-        f"Hi {user_name}. I will hold a conversation with you. "
-        "Send /cancel_crop_image to stop talking to me.\n\n"
+    query = update.callback_query
+    await query.answer()
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Hi {user_name}. I will hold a conversation with you. "
+        "Send /cancel_crop_image to stop talking to me.\n\n",
     )
-    await update.message.reply_text(
-        "Please send me the image to crop, with a maximum size of 20 MB."
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Please send me the image to crop, with a maximum size of 20 MB.",
     )
     return GET_IMAGE
 
@@ -86,7 +98,9 @@ async def save_left_margin(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return GET_LEFT_MARGIN
     context.user_data["left_margin"] = left_margin
     await update.message.reply_text("Left margin saved!")
-    await update.message.reply_text("Do you want to crop the image? /yes or /cancel_crop_image")
+    await update.message.reply_text(
+        "Do you want to crop the image? /yes or /cancel_crop_image"
+    )
     return CROP_IMAGE
 
 
@@ -112,15 +126,19 @@ async def crop_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def cancel_crop_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
-    user = update.message.from_user
-    logger.info("User %s canceled the crop-image conversation.", user.first_name)
-    await update.message.reply_text("Bye! I hope we can talk again some day.")
+    user_name = update.effective_user.first_name
+    query = update.callback_query
+    await query.answer()
+    logger.info("User %s canceled the crop-image conversation.", user_name)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Bye! I hope we can talk again some day."
+    )
 
     return ConversationHandler.END
 
 
 crop_image_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start_crop_image", start_crop_image)],
+    entry_points=[CallbackQueryHandler(start_crop_image, pattern="^" + str(SIX) + "$")],
     states={
         GET_IMAGE: [
             MessageHandler(filters.PHOTO, save_image_to_crop),
@@ -139,7 +157,10 @@ crop_image_conv_handler = ConversationHandler(
         ],
         CROP_IMAGE: [
             CommandHandler("yes", crop_image),
-        ]
+        ],
     },
-    fallbacks=[CommandHandler("cancel_crop_image", cancel_crop_image)],
+    fallbacks=[
+        CallbackQueryHandler(cancel_crop_image, pattern="^" + str(TWELVE) + "$"),
+        CommandHandler("cancel_crop_image", cancel_crop_image),
+    ],
 )

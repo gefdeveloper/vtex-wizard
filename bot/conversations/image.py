@@ -5,11 +5,17 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    CallbackQueryHandler,
 )
 from common.log import logger
 import os, asyncio, time
-from bot.service import save_images_from_excel, create_excel_non_working_urls
+from bot.service import (
+    save_images_from_excel,
+    create_excel_non_working_urls,
+    verificar_columnas_excel_de_imagenes,
+)
 import shutil
+from bot.handlers import THREE, NINE
 
 IMAGE_EXCEL_FILE, DOWNLOAD_IMAGE, SENDING_IMAGE, FAILED_URL_EXCEL_FAILED = range(4)
 
@@ -19,16 +25,20 @@ async def start_download_image(
 ) -> int:
     """Starts the conversation and asks images Excel file."""
     user_name = update.effective_user.first_name
-    await update.message.reply_text(
-        f"Hi {user_name}. I will hold a conversation with you. "
-        "Send /cancel_img to stop talking to me.\n\n"
+    query = update.callback_query
+    await query.answer()
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Hi {user_name}. I will hold a conversation with you. "
+        "Send /cancel_img to stop talking to me.\n\n",
     )
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("./excel-files/examples/img-download-template.xlsx", "rb"),
     )
-    await update.message.reply_text(
-        "Please send me this template with the image URLs to download, with a maximum size of up to 20 MB."
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Please send me this template with the image URLs to download, with a maximum size of up to 20 MB.",
     )
     return IMAGE_EXCEL_FILE
 
@@ -49,6 +59,11 @@ async def save_image_excel(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await new_file.download_to_drive("./excel-files/image/image-url.xlsx")
 
     logger.info("File of %s: %s", user.first_name, "image-url.xlsx")
+    if not verificar_columnas_excel_de_imagenes("./excel-files/image/image-url.xlsx"):
+        await update.message.reply_text(
+            "Invalid Excel format. Please resend the file in the correct format."
+        )
+        return IMAGE_EXCEL_FILE
     await update.message.reply_text("Excel file saved!")
     await update.message.reply_text(
         "Do you want to download images?/download or /skip_download"
@@ -168,15 +183,21 @@ async def cancel_download_image(
         # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
         context.user_data["image_folder_path"] = ""
-    user = update.message.from_user
-    logger.info("User %s canceled the image conversation.", user.first_name)
-    await update.message.reply_text("Bye! I hope we can talk again some day.")
-
+    user_name = update.effective_user.first_name
+    query = update.callback_query
+    await query.answer()
+    logger.info("User %s canceled the image conversation.", user_name)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Bye! I hope we can talk again some day."
+    )
+    
     return ConversationHandler.END
 
 
 download_img_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start_img", start_download_image)],
+    entry_points=[
+        CallbackQueryHandler(start_download_image, pattern="^" + str(THREE) + "$")
+    ],
     states={
         IMAGE_EXCEL_FILE: [
             MessageHandler(filters.ATTACHMENT, save_image_excel),
@@ -193,5 +214,8 @@ download_img_conv_handler = ConversationHandler(
             CommandHandler("failed_url", send_failed_urls_excel_file),
         ],
     },
-    fallbacks=[CommandHandler("cancel_img", cancel_download_image)],
+    fallbacks=[
+        CallbackQueryHandler(cancel_download_image, pattern="^" + str(NINE) + "$"),
+        CommandHandler("cancel_img", cancel_download_image),
+    ],
 )

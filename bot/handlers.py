@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
 )
@@ -13,27 +13,43 @@ import asyncio
 
 
 DEVELOPER_CHAT_ID = config.DEVELOPER_CHAT_ID
+# Callback data
+ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE = range(12)
 
 
-async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_name = update.effective_user.first_name
     message_text = f"Hello {user_name}, I'm Gef Bot!\n"
     message_text += "Here's an explanatory menu:\n\n"
-    message_text += "/start_ean - EAN codes generation.\n"
-    message_text += "/start_des_format - Descriptions excel file edition.\n"
-    message_text += "/start_img - Download images from excel file.\n"
-    message_text += "/start_format - Format images Excel file.\n"
-    message_text += "/start_key - Keywords generation.\n"
-    message_text += "/start_crop_image - Crop image.\n"
-    message_text += "/cancel_ean - Cancel EAN codes generation.\n"
-    message_text += "/cancel_des_format- Cancel descriptions excel file edition.\n"
-    message_text += "/cancel_img - Cancel download images from excel file.\n"
-    message_text += "/cancel_format - Cancel format images Excel file.\n"
-    message_text += "/cancel_key - Cancel keywords generation.\n"
-    message_text += "/cancel_crop_image - Cancel crop image.\n"
-
-    await update.message.reply_text(message_text)
+    keyboard = [
+        [
+            InlineKeyboardButton("EAN codes generation", callback_data=str(ONE)),
+        ],
+        [
+            InlineKeyboardButton(
+                "Descriptions excel file edition", callback_data=str(TWO)
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "Download images from excel file", callback_data=str(THREE)
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "Format images Excel file", callback_data=str(FOUR)
+            ),
+        ],
+        [
+            InlineKeyboardButton("Keywords generation", callback_data=str(FIVE)),
+        ],
+        [
+            InlineKeyboardButton("Crop image", callback_data=str(SIX)),
+        ],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(message_text, reply_markup=reply_markup)
 
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -105,21 +121,43 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         print(f"Error en error_handler(): {e}")
 
 
-async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    message_text = f"Sorry, the entered command is not valid.\n"
-    message_text += "Here is the list of valid commands:\n\n"
-    message_text += "/start_ean - EAN codes generation.\n"
-    message_text += "/start_des_format - Descriptions excel file edition.\n"
-    message_text += "/start_img - Download images from excel file.\n"
-    message_text += "/start_format - Format images Excel file.\n"
-    message_text += "/start_key - Keywords generation.\n"
-    message_text += "/start_crop_image - Crop image.\n"
-    message_text += "/cancel_ean - Cancel EAN codes generation.\n"
-    message_text += "/cancel_des_format- Cancel descriptions excel file edition.\n"
-    message_text += "/cancel_img - Cancel download images from excel file.\n"
-    message_text += "/cancel_format - Cancel format images Excel file."
-    message_text += "/cancel_key - Cancel keywords generation.\n"
-    message_text += "/cancel_crop_image - Cancel crop image.\n"
-    message_text += "/menu - Explanatory menu.\n"
+async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message_text = f"Choose the command for the operation you want to cancel:\n"
     
+    keyboard = [
+        [
+            InlineKeyboardButton("Cancel EAN codes generation", callback_data=str(SEVEN)),
+        ],
+        [
+            InlineKeyboardButton(
+                "Cancel descriptions excel file edition", callback_data=str(EIGHT)
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "Cancel download images from excel file", callback_data=str(NINE)
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "Cancel format images Excel file", callback_data=str(TEN)
+            ),
+        ],
+        [
+            InlineKeyboardButton("Cancel keywords generation", callback_data=str(ELEVEN)),
+        ],
+        [
+            InlineKeyboardButton("Cancel crop image", callback_data=str(TWELVE)),
+        ],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(message_text, reply_markup=reply_markup)
+
+
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message_text = f"Sorry, the entered command is not valid.\n"
+    message_text += "Here is the list of the valñid commands:\n\n"
+    message_text += "/start - Shows the options menu.\n"
+    message_text += "/cancel - List of commands to cancel an operation.\n"
+
     await update.message.reply_text(message_text)

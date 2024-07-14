@@ -5,10 +5,11 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    CallbackQueryHandler,
 )
 from common.log import logger
 from bot.service import format_image_excel_file
-
+from bot.handlers import FOUR, TEN
 
 RAW_IMAGE_EXCEL_FILE = range(1)
 
@@ -18,9 +19,12 @@ async def start_format_image_excel_file(
 ) -> int:
     """Starts the conversation and asks images Excel file."""
     user_name = update.effective_user.first_name
-    await update.message.reply_text(
-        f"Hi {user_name}. I will hold a conversation with you. "
-        "Send /cancel_format to stop talking to me.\n\n"
+    query = update.callback_query
+    await query.answer()
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Hi {user_name}. I will hold a conversation with you. "
+        "Send /cancel_format to stop talking to me.\n\n",
     )
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
@@ -28,8 +32,9 @@ async def start_format_image_excel_file(
             "./excel-files/examples/unformatted-image-URLs-template.xlsx", "rb"
         ),
     )
-    await update.message.reply_text(
-        "Please send me this template with the image URLs to format, with a maximum size of up to 20 MB."
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Please send me this template with the image URLs to format, with a maximum size of up to 20 MB.",
     )
     return RAW_IMAGE_EXCEL_FILE
 
@@ -67,18 +72,32 @@ async def cancel_format_image_excel_file(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     """Cancels and ends the conversation."""
-    user = update.message.from_user
-    logger.info("User %s canceled the format conversation.", user.first_name)
-    await update.message.reply_text("Bye! I hope we can talk again some day.")
+    user_name = update.effective_user.first_name
+    query = update.callback_query
+    await query.answer()
+    logger.info("User %s canceled the format conversation.", user_name)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Bye! I hope we can talk again some day."
+    )
+    
     return ConversationHandler.END
 
 
 raw_image_excel_file_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start_format", start_format_image_excel_file)],
+    entry_points=[
+        CallbackQueryHandler(
+            start_format_image_excel_file, pattern="^" + str(FOUR) + "$"
+        )
+    ],
     states={
         RAW_IMAGE_EXCEL_FILE: [
             MessageHandler(filters.ATTACHMENT, format_raw_image_excel_file)
         ],
     },
-    fallbacks=[CommandHandler("cancel_format", cancel_format_image_excel_file)],
+    fallbacks=[
+        CallbackQueryHandler(
+            cancel_format_image_excel_file, pattern="^" + str(FOUR) + "$"
+        ),
+        CommandHandler("cancel_format", cancel_format_image_excel_file),
+    ],
 )
