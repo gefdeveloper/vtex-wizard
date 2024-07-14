@@ -62,9 +62,17 @@ def procesar_imagen(url, sku, carpeta_destino):
         ruta_archivo = os.path.join(
             carpeta_destino, nombre_archivo
         )  # Ruta completa del archivo
-
+        
         try:
-            respuesta = requests.get(enlace.strip())  # Eliminar espacios en blanco
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, como Gecko) Chrome/58.0.3029.110 Safari/537.3",
+                "Referer": "https://www.ripley.com.pe",
+                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Accept": "image/webp,image/apng,image/,/*;q=0.8",
+            }
+            respuesta = requests.get(enlace.strip(), headers=headers)  # Eliminar espacios en blanco
             if respuesta.ok:
                 imagen = Image.open(BytesIO(respuesta.content))
                 # Verificar si la imagen ya tiene las dimensiones y el formato requeridos
@@ -214,17 +222,20 @@ def format_image_excel_file():
     df_grouped.to_excel("./excel-files/format/formatted-excel-file.xlsx", index=False)
 
 
-
 def create_keywords_of_product_name(texto):
     # Tokenizar el texto en palabras
     palabras = word_tokenize(texto)
 
     # Eliminar palabras vacías (palabras comunes como "el", "es", "y", etc.)
-    palabras_vacias = set(stopwords.words('spanish'))
-    palabras = [palabra.lower() for palabra in palabras if palabra.lower() not in palabras_vacias]
+    palabras_vacias = set(stopwords.words("spanish"))
+    palabras = [
+        palabra.lower()
+        for palabra in palabras
+        if palabra.lower() not in palabras_vacias
+    ]
 
     # Eliminar caracteres especiales usando expresiones regulares
-    palabras = [re.sub(r'[^a-zA-Z0-9áéíóúü]', '', palabra) for palabra in palabras]
+    palabras = [re.sub(r"[^a-zA-Z0-9áéíóúü]", "", palabra) for palabra in palabras]
 
     # Eliminar cadenas vacías después de eliminar los caracteres especiales
     palabras = [palabra for palabra in palabras if palabra]
@@ -235,7 +246,9 @@ def create_keywords_of_product_name(texto):
         frecuencia_palabras[palabra] = frecuencia_palabras.get(palabra, 0) + 1
 
     # Ordenar las palabras por frecuencia en orden descendente
-    palabras_ordenadas = sorted(frecuencia_palabras.items(), key=lambda x: x[1], reverse=True)
+    palabras_ordenadas = sorted(
+        frecuencia_palabras.items(), key=lambda x: x[1], reverse=True
+    )
 
     # Devolver las 10 palabras clave principales (puedes ajustar este número según sea necesario)
     return [palabra for palabra, _ in palabras_ordenadas[:20]]
@@ -250,7 +263,8 @@ def create_keywords(texto, categoria):
         sustantivos = [
             palabra
             for palabra in keywords
-            if palabra not in [
+            if palabra
+            not in [
                 "ml",
                 "–",
                 "gr",
@@ -284,7 +298,7 @@ def generate_keywords_excel_file():
     # Descarga los recursos necesarios de NLTK
     nltk.download("punkt")
     nltk.download("averaged_perceptron_tagger")
-    nltk.download('stopwords')
+    nltk.download("stopwords")
 
     # Carga el archivo Excel
     df = pd.read_excel("./excel-files/keywords/products-list.xlsx")
@@ -295,19 +309,19 @@ def generate_keywords_excel_file():
 
     # Aplica la función a las columnas seleccionadas
     df["keywords"] = df.apply(
-        lambda row: create_keywords(
-            row[columna_nombre], row[columna_categoria]
-        ),
+        lambda row: create_keywords(row[columna_nombre], row[columna_categoria]),
         axis=1,
     )
     # Guarda el resultado en un nuevo archivo Excel
     df.to_excel("./excel-files/keywords/keywords-list.xlsx", index=False)
 
 
-def crop_margins(imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha):
+def crop_margins(
+    imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha
+):
     # Abrir la imagen
     imagen = Image.open(imagen_path)
-    
+
     # Obtener dimensiones de la imagen
     ancho, alto = imagen.size
 
@@ -323,9 +337,77 @@ def crop_margins(imagen_path, margen_inferior, margen_superior, margen_izquierda
     return imagen_recortada
 
 
-def save_cropped_image(margen_inferior, margen_superior, margen_izquierda, margen_derecha):
+def save_cropped_image(
+    margen_inferior, margen_superior, margen_izquierda, margen_derecha
+):
     # Recortar la imagen
-    imagen_recortada = crop_margins("./media/images/image-to-crop.jpg", margen_inferior, margen_superior, margen_izquierda, margen_derecha)
+    imagen_recortada = crop_margins(
+        "./media/images/image-to-crop.jpg",
+        margen_inferior,
+        margen_superior,
+        margen_izquierda,
+        margen_derecha,
+    )
 
     # Guardar la imagen recortada
-    imagen_recortada.save('./media/images/cropped-image.jpg')
+    imagen_recortada.save("./media/images/cropped-image.jpg")
+
+
+def verificar_columnas_excel_de_imagenes(ruta_archivo):
+    try:
+        # Leer el archivo Excel
+        df = pd.read_excel(ruta_archivo)
+
+        # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
+        if 'SKU' in df.columns and 'url' in df.columns:
+            return True
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al leer el archivo: {e}")
+        return None
+
+
+def verificar_columnas_excel_de_descripciones(ruta_archivo):
+    try:
+        # Leer el archivo Excel
+        df = pd.read_excel(ruta_archivo)
+
+        # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
+        if 'columna_html' in df.columns:
+            return True
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al leer el archivo: {e}")
+        return None
+
+
+def verificar_columnas_excel_de_keywords(ruta_archivo):
+    try:
+        # Leer el archivo Excel
+        df = pd.read_excel(ruta_archivo)
+
+        # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
+        if 'Nombre' in df.columns and 'Categoria' in df.columns:
+            return True
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al leer el archivo: {e}")
+        return None
+    
+
+def verificar_columnas_excel_de_imagenes_sin_formato(ruta_archivo):
+    try:
+        # Leer el archivo Excel
+        df = pd.read_excel(ruta_archivo)
+
+        # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
+        if 'Nombre' in df.columns and 'Categoria' in df.columns:
+            return True
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al leer el archivo: {e}")
+        return None

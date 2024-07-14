@@ -8,7 +8,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from bot.handlers import error_handler, text_handler, unknown_command
+from bot.handlers import error_handler, start, cancel_command, unknown_command
 from bot.conversations.ean import ean_conv_handler
 from bot.conversations.image import download_img_conv_handler
 from bot.conversations.format_description import description_format_conv_handler
@@ -18,15 +18,17 @@ from bot.conversations.format_image_excel_file import raw_image_excel_file_conv_
 
 
 def add_handlers(dp):
-    dp.add_handler(CommandHandler("menu", text_handler))
+    dp.add_handler(CommandHandler("start", start))
     dp.add_handler(ean_conv_handler)
-    dp.add_handler(download_img_conv_handler)
     dp.add_handler(description_format_conv_handler)
+    dp.add_handler(download_img_conv_handler)
+    dp.add_handler(raw_image_excel_file_conv_handler)
     dp.add_handler(keyword_conv_handler)
     dp.add_handler(crop_image_conv_handler)
-    dp.add_handler(raw_image_excel_file_conv_handler)
     dp.add_error_handler(error_handler)
+    dp.add_handler(CommandHandler("cancel", cancel_command))
     dp.add_handler(MessageHandler(filters.COMMAND, unknown_command))
+
 
 add_handlers(ptb)
 
