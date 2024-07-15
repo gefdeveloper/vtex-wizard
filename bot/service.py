@@ -62,7 +62,7 @@ def procesar_imagen(url, sku, carpeta_destino):
         ruta_archivo = os.path.join(
             carpeta_destino, nombre_archivo
         )  # Ruta completa del archivo
-        
+
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, como Gecko) Chrome/58.0.3029.110 Safari/537.3",
@@ -72,7 +72,9 @@ def procesar_imagen(url, sku, carpeta_destino):
                 "Connection": "keep-alive",
                 "Accept": "image/webp,image/apng,image/,/*;q=0.8",
             }
-            respuesta = requests.get(enlace.strip(), headers=headers)  # Eliminar espacios en blanco
+            respuesta = requests.get(
+                enlace.strip(), headers=headers
+            )  # Eliminar espacios en blanco
             if respuesta.ok:
                 imagen = Image.open(BytesIO(respuesta.content))
                 # Verificar si la imagen ya tiene las dimensiones y el formato requeridos
@@ -166,10 +168,21 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
 
             # Verificar si el valor en la columna "url" es una cadena antes de intentar dividirla
             enlaces_imagen = fila["url"]
+            sku = fila["SKU"]
+            # Verificar si el SKU contiene el carácter "/"
+            if "/" in sku:
+                urls_no_funcionan.append(
+                    {
+                        "SKU": sku,
+                        "URL": enlaces_imagen,
+                        "Comentario": "El SKU tiene el carácter /",
+                    }
+                )
+                print(f"El SKU {sku} tiene el carácter /")
+                continue
             if pd.notnull(enlaces_imagen) and isinstance(enlaces_imagen, str):
                 # Dividir los enlaces por los separadores "|"
                 urls = enlaces_imagen.split("|")
-                sku = fila["SKU"]
                 for url in urls:
                     if check_url(url) == False:
                         urls_no_funcionan.append(
@@ -196,19 +209,34 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                                 "Comentario": "La URL no existe",
                             }
                         )
+                    elif url == "":
+                        urls_no_funcionan.append(
+                            {
+                                "SKU": sku,
+                                "URL": url,
+                                "Comentario": "Celda vacía",
+                            }
+                        )
             else:
                 sku = fila["SKU"]
                 urls_no_funcionan.append(
-                    {"SKU": sku, "URL": enlaces_imagen, "Comentario": "Celda vacía"}
+                    {
+                        "SKU": sku,
+                        "URL": enlaces_imagen,
+                        "Comentario": "URL no especificada o no es una cadena válida",
+                    }
                 )
-                print(f"URL está vacía para SKU {sku}")
+                print(
+                    f"URL no especificada o no es una cadena válida para SKU {sku}: {enlaces_imagen}"
+                )
 
         df_urls_no_funcionan = pd.DataFrame(urls_no_funcionan)
 
         archivo_resultado = os.path.join(carpeta_destino, "failed_urls.xlsx")
         df_urls_no_funcionan.to_excel(archivo_resultado, index=False)
-        return len(urls_no_funcionan)
         print(f"Se han guardado las URL que no funcionan en '{archivo_resultado}'.")
+        return len(urls_no_funcionan)
+
     except Exception as e:
         print(f"Error al procesar el archivo Excel: {e}")
 
@@ -359,7 +387,7 @@ def verificar_columnas_excel_de_imagenes(ruta_archivo):
         df = pd.read_excel(ruta_archivo)
 
         # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
-        if 'SKU' in df.columns and 'url' in df.columns:
+        if "SKU" in df.columns and "url" in df.columns:
             return True
         else:
             return None
@@ -374,7 +402,7 @@ def verificar_columnas_excel_de_descripciones(ruta_archivo):
         df = pd.read_excel(ruta_archivo)
 
         # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
-        if 'columna_html' in df.columns:
+        if "columna_html" in df.columns:
             return True
         else:
             return None
@@ -389,14 +417,14 @@ def verificar_columnas_excel_de_keywords(ruta_archivo):
         df = pd.read_excel(ruta_archivo)
 
         # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
-        if 'Nombre' in df.columns and 'Categoria' in df.columns:
+        if "Nombre" in df.columns and "Categoria" in df.columns:
             return True
         else:
             return None
     except Exception as e:
         print(f"Error al leer el archivo: {e}")
         return None
-    
+
 
 def verificar_columnas_excel_de_imagenes_sin_formato(ruta_archivo):
     try:
@@ -404,7 +432,7 @@ def verificar_columnas_excel_de_imagenes_sin_formato(ruta_archivo):
         df = pd.read_excel(ruta_archivo)
 
         # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
-        if 'Nombre' in df.columns and 'Categoria' in df.columns:
+        if "Nombre" in df.columns and "Categoria" in df.columns:
             return True
         else:
             return None

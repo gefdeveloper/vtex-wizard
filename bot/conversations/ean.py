@@ -87,8 +87,9 @@ async def ean_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def cancel_ean(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
     user_name = update.effective_user.first_name
-    query = update.callback_query
-    await query.answer()
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
     logger.info("User %s canceled the ean conversation.", user_name)
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="Bye! I hope we can talk again some day."
