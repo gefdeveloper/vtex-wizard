@@ -184,8 +184,9 @@ async def cancel_download_image(
         shutil.rmtree(context.user_data["image_folder_path"])
         context.user_data["image_folder_path"] = ""
     user_name = update.effective_user.first_name
-    query = update.callback_query
-    await query.answer()
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
     logger.info("User %s canceled the image conversation.", user_name)
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="Bye! I hope we can talk again some day."
