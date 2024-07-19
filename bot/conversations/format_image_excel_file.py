@@ -8,7 +8,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 from common.log import logger
-from bot.service import format_image_excel_file
+from bot.service import format_image_excel_file, verificar_columnas_excel_de_imagenes
 from bot.handlers import FOUR, TEN
 
 RAW_IMAGE_EXCEL_FILE = range(1)
@@ -54,8 +54,19 @@ async def format_raw_image_excel_file(
     new_file = await update.message.effective_attachment.get_file()
     await new_file.download_to_drive("./excel-files/format/raw-excel-file.xlsx")
     logger.info("File of %s: %s", user.first_name, "raw-excel-file.xlsx")
+    if not verificar_columnas_excel_de_imagenes("./excel-files/image/image-url.xlsx"):
+        await update.message.reply_text(
+            "Invalid Excel format. Please resend the file in the correct format."
+        )
+        return RAW_IMAGE_EXCEL_FILE
     await update.message.reply_text("Excel file saved!")
-    format_image_excel_file()
+    try:
+        format_image_excel_file()
+    except Exception as e:
+        await update.message.reply_text(
+            "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."
+        )
+        return RAW_IMAGE_EXCEL_FILE
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("./excel-files/format/formatted-excel-file.xlsx", "rb"),
@@ -97,7 +108,7 @@ raw_image_excel_file_conv_handler = ConversationHandler(
     },
     fallbacks=[
         CallbackQueryHandler(
-            cancel_format_image_excel_file, pattern="^" + str(FOUR) + "$"
+            cancel_format_image_excel_file, pattern="^" + str(TEN) + "$"
         ),
         CommandHandler("cancel_format", cancel_format_image_excel_file),
     ],

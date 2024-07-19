@@ -58,7 +58,13 @@ async def format_descriptions_excel_file(
         )
         return DESCRIPTION_EXCEL_FILE
     await update.message.reply_text("Excel file saved!")
-    change_html_to_text()
+    try:
+        change_html_to_text()
+    except Exception as e:
+        await update.message.reply_text(
+            "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."
+        )
+        return DESCRIPTION_EXCEL_FILE
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("./excel-files/descriptions/description-text.xlsx", "rb"),
