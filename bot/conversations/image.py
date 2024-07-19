@@ -15,6 +15,7 @@ from bot.service import (
     verificar_columnas_excel_de_imagenes,
 )
 import shutil
+from urllib.parse import urlparse
 from bot.handlers import THREE, NINE
 
 IMAGE_EXCEL_FILE, DOWNLOAD_IMAGE, SENDING_IMAGE, FAILED_URL_EXCEL_FAILED = range(4)
@@ -74,14 +75,20 @@ async def save_image_excel(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Download images from URLs provided in an Excel file."""
-    await update.message.reply_text("Downloading images...")
-    user = update.message.from_user
-    # Crear una carpeta con el nombre de usuario y la hora actual para guardar las imágenes
-    folder_name = f"{user.first_name}_{int(time.time())}"
-    folder_path = os.path.join("./media", folder_name)
-    os.makedirs(folder_path, exist_ok=True)
-    # Descargar las imágenes
-    save_images_from_excel("./excel-files/image/image-url.xlsx", folder_path)
+    try:
+        user = update.message.from_user
+        # Crear una carpeta con el nombre de usuario y la hora actual para guardar las imágenes
+        folder_name = f"{user.first_name}_{int(time.time())}"
+        folder_path = os.path.join("./media", folder_name)
+        os.makedirs(folder_path, exist_ok=True)
+        # Descargar las imágenes
+        await update.message.reply_text("Downloading images...")
+        save_images_from_excel("./excel-files/image/image-url.xlsx", folder_path)
+    except Exception as e:
+        await update.message.reply_text(
+            "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."
+        )
+        return IMAGE_EXCEL_FILE
     context.user_data["image_folder_path"] = folder_path
     await update.message.reply_text("Images downloaded succesfully")
     await update.message.reply_text(
@@ -99,7 +106,8 @@ async def send_download_image(
 
     image_files = os.listdir(folder_path)
     for file_name in image_files:
-        image_path = os.path.join(folder_path, file_name)
+        image_path = folder_path+"\\"+file_name
+        #image_path = os.path.join(folder_path, file_name)
         try:
             await context.bot.send_document(
                 chat_id=update.message.chat_id,

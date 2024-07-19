@@ -60,7 +60,13 @@ async def create_keywords_excel_file(
         )
         return KEYWORDS_EXCEL_FILE
     await update.message.reply_text("Excel file saved!")
-    generate_keywords_excel_file()
+    try:
+        generate_keywords_excel_file()
+    except Exception as e:
+        await update.message.reply_text(
+            "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."
+        )
+        return KEYWORDS_EXCEL_FILE
     await context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open("./excel-files/keywords/keywords-list.xlsx", "rb"),

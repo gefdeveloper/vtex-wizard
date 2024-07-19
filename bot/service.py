@@ -62,11 +62,12 @@ def procesar_imagen(url, sku, carpeta_destino):
         ruta_archivo = os.path.join(
             carpeta_destino, nombre_archivo
         )  # Ruta completa del archivo
-
+        parsed_url = urlparse(enlace)
+        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, como Gecko) Chrome/58.0.3029.110 Safari/537.3",
-                "Referer": "https://www.ripley.com.pe",
+                "Referer": base_url,
                 "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
@@ -115,12 +116,15 @@ def procesar_imagen(url, sku, carpeta_destino):
 def save_images_from_excel(archivo_excel, carpeta_destino):
     """Extracts image URLs from an Excel file and saves the corresponding images to the specified destination folder."""
     df = pd.read_excel(archivo_excel)
-
     for index, fila in df.iterrows():
         enlaces_imagen = fila["url"]
         sku = fila["SKU"]
-        if not pd.isna(enlaces_imagen) and enlaces_imagen != "":
+        if (
+            not pd.isna(enlaces_imagen)
+            and not pd.isnull(enlaces_imagen)
+        ):
             procesar_imagen(enlaces_imagen, sku, carpeta_destino)
+
 
 
 def check_excel_path(ruta):
