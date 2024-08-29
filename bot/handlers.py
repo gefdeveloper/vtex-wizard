@@ -45,7 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("Keywords generation", callback_data=str(FIVE)),
         ],
         [
-            InlineKeyboardButton("Crop image", callback_data=str(SIX)),
+            InlineKeyboardButton("Descriptions generation", callback_data=str(SIX)),
         ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)

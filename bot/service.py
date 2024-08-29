@@ -1,4 +1,4 @@
-import re, random, requests, os
+import re, random, requests, os, ollama
 import pandas as pd
 from bs4 import BeautifulSoup
 from PIL import Image
@@ -37,7 +37,7 @@ def escape_string(input_string: str):
 def html_to_text(html):
     """Convert a snippet of HTML into plain text."""
     soup = BeautifulSoup(html, "html.parser")
-    return soup.get_text()
+    return soup.get_text().replace("_x000D_","")
 
 
 def change_html_to_text():
@@ -348,9 +348,96 @@ def generate_keywords_excel_file():
     df.to_excel("./excel-files/keywords/keywords-list.xlsx", index=False)
 
 
+def generate_keywords_excel_file_2():
+        # Cargar el archivo Excel con la lista de productos
+    file_path = "./excel-files/keywords/products-list.xlsx"  # Cambia esto a la ruta de tu archivo Excel
+    df = pd.read_excel(file_path)
+    #Iterables
+    products_list = df["Nombre"].astype(str).tolist()
+    brands_list = df["Marca"].astype(str).tolist()
+    categories_list = df["Categoria"].astype(str).tolist()
+    # Inicializar una lista para almacenar las keywords generadas
+    keywords_list = []
+
+    # Iterar sobre cada producto y generar las keywords
+    for product, brand, category in zip(products_list, brands_list, categories_list):
+        # Crear el mensaje para el modelo
+        #prompt = f"Enviame solo una lista de keywords comerciales separadas por coma para el siguiente producto: {product} de la marca {brand} y categoría en {category}"
+        prompt = (f"Genera una lista concisa de keywords comerciales, separadas por comas, "
+          f"para un producto como '{product}', de la marca '{brand}', "
+          f"en la categoría '{category}'.")
+        # Llamar al modelo de Ollama
+        response = ollama.chat(
+            model="llama3.1:latest",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+        )
+
+        # Extraer las keywords generadas
+        content = response["message"]["content"]
+
+        # Usar regex para extraer solo la lista de keywords
+        keywords_match = re.search(r"([\w\s]+,)+[\w\s]+", content)
+        keywords = keywords_match.group(0) if keywords_match else content
+
+        # Eliminar los renglones en blanco antes y después de las keywords
+        keywords = keywords.strip()
+
+        # Agregar las keywords a la lista
+        keywords_list.append(keywords)
+
+
+    df = pd.DataFrame({"Nombre": products_list, "Keywords": keywords_list})
+
+    # Guardar el DataFrame en un archivo Excel
+    df.to_excel("./excel-files/keywords/keywords-list.xlsx", index=False)
+
+
+def generation_description_exce_file():
+    # Cargar el archivo Excel con la lista de productos
+    file_path = "./excel-files/descriptions/products-list.xlsx"  # Cambia esto a la ruta de tu archivo Excel
+    df = pd.read_excel(file_path)
+
+    # Inicializar una lista para almacenar las descripciones generadas
+    descriptions_list = []
+    products_list = df["Nombre"].astype(str).tolist()
+    # Iterar sobre cada producto y generar las descripciones
+    for product in products_list:
+        # Crear el mensaje para el modelo
+        prompt = f"Genera una descripción comercial atractiva para el siguiente producto en un párrafo de máximo 500 caracteres: {product}"
+
+        # Llamar al modelo de Ollama
+        response = ollama.chat(
+        model="llama3.1:latest",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+    )
+
+        # Extraer la descripción generada
+        description = response["message"]["content"]
+
+        # Eliminar los renglones en blanco antes y después de la descripción
+        description = description.strip()
+
+        # Agregar la descripción a la lista
+        descriptions_list.append(description)
+
+    # Agregar las descripciones generadas como una nueva columna en el DataFrame
+    df = pd.DataFrame({"Nombre": products_list, "Descripción Comercial": descriptions_list})
+
+    df.to_excel("./excel-files/descriptions/descriptions-list.xlsx", index=False)
+
 def crop_margins(
-    imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha
-):
+        imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha
+    ):
     # Abrir la imagen
     imagen = Image.open(imagen_path)
 
@@ -413,6 +500,21 @@ def verificar_columnas_excel_de_descripciones(ruta_archivo):
     except Exception as e:
         print(f"Error al leer el archivo: {e}")
         return None
+    
+
+def verificar_columnas_excel_de_generacion_descripciones(ruta_archivo):
+    try:
+        # Leer el archivo Excel
+        df = pd.read_excel(ruta_archivo)
+
+        # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
+        if "Nombre" in df.columns:
+            return True
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al leer el archivo: {e}")
+        return None
 
 
 def verificar_columnas_excel_de_keywords(ruta_archivo):
@@ -421,7 +523,7 @@ def verificar_columnas_excel_de_keywords(ruta_archivo):
         df = pd.read_excel(ruta_archivo)
 
         # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
-        if "Nombre" in df.columns and "Categoria" in df.columns:
+        if "Nombre" in df.columns and "Marca" in df.columns and "Categoria" in df.columns:
             return True
         else:
             return None
@@ -443,3 +545,8 @@ def verificar_columnas_excel_de_imagenes_sin_formato(ruta_archivo):
     except Exception as e:
         print(f"Error al leer el archivo: {e}")
         return None
+
+
+def escape_string(input_string):
+    """Replaces characters '-' with '\-', and characters '.' with '\.'"""
+    return re.sub(r"[-.\\]", lambda x: "\\" + x.group(), input_string)
