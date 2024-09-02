@@ -156,6 +156,8 @@ def check_url(url):
             return 403
         elif response.status_code == 404:
             return 404
+        elif response.status_code == 503:
+            return 503
     except requests.ConnectionError:
         return False
 
@@ -165,14 +167,12 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
     try:
 
         df = pd.read_excel(archivo_excel)
-
         urls_no_funcionan = []
 
         for index, fila in df.iterrows():
-
-            # Verificar si el valor en la columna "url" es una cadena antes de intentar dividirla
             enlaces_imagen = fila["url"]
             sku = fila["SKU"]
+
             # Verificar si el SKU contiene el carácter "/"
             if "/" in sku:
                 urls_no_funcionan.append(
@@ -184,9 +184,11 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                 )
                 print(f"El SKU {sku} tiene el carácter /")
                 continue
+
             if pd.notnull(enlaces_imagen) and isinstance(enlaces_imagen, str):
-                # Dividir los enlaces por los separadores "|"
-                urls = enlaces_imagen.split("|")
+                # Dividir los enlaces por el separador "|" o procesar el único enlace si no hay "|"
+                urls = enlaces_imagen.split("|") if "|" in enlaces_imagen else [enlaces_imagen]
+
                 for url in urls:
                     if check_url(url) == False:
                         urls_no_funcionan.append(
@@ -213,6 +215,14 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                                 "Comentario": "La URL no existe",
                             }
                         )
+                    elif check_url(url) == 503:
+                        urls_no_funcionan.append(
+                            {
+                                "SKU": sku,
+                                "URL": url,
+                                "Comentario": "El servidor no está disponible temporalmente (Error 503).",
+                            }
+                        )
                     elif url == "":
                         urls_no_funcionan.append(
                             {
@@ -222,7 +232,6 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
                             }
                         )
             else:
-                sku = fila["SKU"]
                 urls_no_funcionan.append(
                     {
                         "SKU": sku,
