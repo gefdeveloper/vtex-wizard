@@ -152,7 +152,7 @@ async def send_failed_urls_excel_file(
         "./excel-files/image/image-url.xlsx",
         "./excel-files/image",
     )
-    if failed_urls_number == 0:
+    if failed_urls_number == None:
         await update.message.reply_text("Failed URLs not found.")
     else:
         await update.message.reply_text(f"We found {failed_urls_number} failed URLs.")
