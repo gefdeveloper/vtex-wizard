@@ -82,12 +82,17 @@ async def download_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         folder_name = f"{user.first_name}_{int(time.time())}"
         folder_path = os.path.join("./media", folder_name)
         os.makedirs(folder_path, exist_ok=True)
-        # Obtener la ruta absoluta
-        absolute_folder_path = escape_string(os.path.abspath(folder_path))
         # Descargar las imágenes
         await update.message.reply_text("Downloading images...")
+
         save_images_from_excel("./excel-files/image/image-url.xlsx", folder_path)
-        shutil.make_archive("./media/images", "zip", folder_path)
+        
+        # Comprimir cada carpeta Lote_X en un archivo ZIP separado
+        lote_folders = [f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f)) and f.startswith("Lote_")]
+        
+        for lote_folder in lote_folders:
+            lote_folder_path = os.path.join(folder_path, lote_folder)
+            shutil.make_archive("./media/zip/"+lote_folder, 'zip', lote_folder_path)
     except Exception as e:
         await update.message.reply_text(
             "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."
@@ -106,20 +111,34 @@ async def send_download_image(
     """Download zip file with downloaded images provided."""
 
     try:
-        await context.bot.send_document(
-            chat_id=update.message.chat_id,
-            document="./media/images.zip",
-            disable_notification=True,
-            write_timeout=35.0,
-        )
-    except error.TimedOut as e:
-        await update.message.reply_text(
-            f"An timed out error occurred while sending the images.zip file: {e}"
-        )
+        # Listar todos los archivos .zip en la carpeta zip
+        zip_files = [f for f in os.listdir("./media/zip") if f.endswith(".zip")]
+
+        # Enviar cada archivo zip
+        for zip_file in zip_files:
+            zip_file_path = os.path.join("./media/zip", zip_file)
+            try:
+                await context.bot.send_document(
+                        chat_id=update.message.chat_id,
+                        document=zip_file_path,
+                        disable_notification=True,
+                        write_timeout=35.0,
+                    )
+            except error.TimedOut as e:
+                await update.message.reply_text(
+                        f"A timed out error occurred while sending the file {zip_file}: {e}"
+                    )
+            except Exception as e:
+                await update.message.reply_text(
+                        f"An error occurred while sending the file {zip_file}: {e}"
+                    )
+    
     except Exception as e:
         await update.message.reply_text(
-            f"An error occurred while sending the images.zip file: {e}"
+            f"An error occurred: {e}"
         )
+        return FAILED_URL_EXCEL_FAILED
+    
     await update.message.reply_text(
         "Do you want to Excel file with failed URLs?/failed_url or /cancel_img"
     )
@@ -168,10 +187,17 @@ async def send_failed_urls_excel_file(
         # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
         context.user_data["image_folder_path"] = ""
-    # Delete the images.zip file
-    zip_file_path = "./media/images.zip"
-    if os.path.exists(zip_file_path):
-        os.remove(zip_file_path)
+        
+    # List all .zip files in zip folder
+    zip_files = [f for f in os.listdir("./media/zip") if f.endswith(".zip")]
+
+    # Delete the .zip files from zip folder
+    for zip_file in zip_files:
+        zip_file_path = os.path.join("./media/zip", zip_file)
+    
+        if os.path.exists(zip_file_path):
+            os.remove(zip_file_path)
+    
     user = update.message.from_user
     logger.info("User %s canceled the image conversation.", user.first_name)
     await update.message.reply_text("Bye! I hope we can talk again some day.")
@@ -190,10 +216,17 @@ async def cancel_download_image(
         # Delete the downloaded image folder
         shutil.rmtree(context.user_data["image_folder_path"])
         context.user_data["image_folder_path"] = ""
-    # Delete the images.zip file
-    zip_file_path = "./media/images.zip"
-    if os.path.exists(zip_file_path):
-        os.remove(zip_file_path)
+
+    # List all .zip files in zip folder
+    zip_files = [f for f in os.listdir("./media/zip") if f.endswith(".zip")]
+
+    # Delete the .zip files from zip folder
+    for zip_file in zip_files:
+        zip_file_path = os.path.join("./media/zip", zip_file)
+    
+        if os.path.exists(zip_file_path):
+            os.remove(zip_file_path)
+    
     user_name = update.effective_user.first_name
     if update.callback_query:
         query = update.callback_query
