@@ -37,7 +37,7 @@ def escape_string(input_string: str):
 def html_to_text(html):
     """Convert a snippet of HTML into plain text."""
     soup = BeautifulSoup(html, "html.parser")
-    return soup.get_text().replace("_x000D_","")
+    return soup.get_text().replace("_x000D_", "")
 
 
 def change_html_to_text():
@@ -113,18 +113,42 @@ def procesar_imagen(url, sku, carpeta_destino):
             print(f"Error al procesar la imagen {enlace}: {e}")
 
 
-def save_images_from_excel(archivo_excel, carpeta_destino):
-    """Extracts image URLs from an Excel file and saves the corresponding images to the specified destination folder."""
+def obtener_tamano_carpeta(carpeta):
+    """Devuelve el tamaño total en bytes de todos los archivos dentro de una carpeta."""
+    tamano_total = 0
+    for ruta_directorio, _, archivos in os.walk(carpeta):
+        for archivo in archivos:
+            ruta_archivo = os.path.join(ruta_directorio, archivo)
+            tamano_total += os.path.getsize(ruta_archivo)
+    return tamano_total
+
+
+def save_images_from_excel(archivo_excel, carpeta_base_destino):
+    """Extrae las URL de imágenes de un archivo Excel y guarda las imágenes en carpetas según el peso."""
+
+    TAMANO_MAXIMO_CARPETA = 20 * 1024 * 1024  # 20 MB
     df = pd.read_excel(archivo_excel)
+    numero_carpeta = 1
+    carpeta_destino = os.path.join(carpeta_base_destino, f"Lote_{numero_carpeta}")
+    os.makedirs(carpeta_destino, exist_ok=True)
+
     for index, fila in df.iterrows():
         enlaces_imagen = fila["url"]
         sku = fila["SKU"]
-        if (
-            not pd.isna(enlaces_imagen)
-            and not pd.isnull(enlaces_imagen)
-        ):
+
+        if not pd.isna(enlaces_imagen) and not pd.isnull(enlaces_imagen):
+            # Procesar la imagen y guardarla en la carpeta actual
             procesar_imagen(enlaces_imagen, sku, carpeta_destino)
 
+            # Verificar si el tamaño de la carpeta supera el límite
+            tamano_actual_carpeta = obtener_tamano_carpeta(carpeta_destino)
+            if tamano_actual_carpeta >= TAMANO_MAXIMO_CARPETA:
+                # Crear una nueva carpeta si se supera el tamaño máximo
+                numero_carpeta += 1
+                carpeta_destino = os.path.join(
+                    carpeta_base_destino, f"Lote_{numero_carpeta}"
+                )
+                os.makedirs(carpeta_destino, exist_ok=True)
 
 
 def check_excel_path(ruta):
@@ -187,7 +211,11 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
 
             if pd.notnull(enlaces_imagen) and isinstance(enlaces_imagen, str):
                 # Dividir los enlaces por el separador "|" o procesar el único enlace si no hay "|"
-                urls = enlaces_imagen.split("|") if "|" in enlaces_imagen else [enlaces_imagen]
+                urls = (
+                    enlaces_imagen.split("|")
+                    if "|" in enlaces_imagen
+                    else [enlaces_imagen]
+                )
 
                 for url in urls:
                     if check_url(url) == False:
@@ -358,10 +386,10 @@ def generate_keywords_excel_file():
 
 
 def generate_keywords_excel_file_2():
-        # Cargar el archivo Excel con la lista de productos
+    # Cargar el archivo Excel con la lista de productos
     file_path = "./excel-files/keywords/products-list.xlsx"  # Cambia esto a la ruta de tu archivo Excel
     df = pd.read_excel(file_path)
-    #Iterables
+    # Iterables
     products_list = df["Nombre"].astype(str).tolist()
     brands_list = df["Marca"].astype(str).tolist()
     categories_list = df["Categoria"].astype(str).tolist()
@@ -371,10 +399,12 @@ def generate_keywords_excel_file_2():
     # Iterar sobre cada producto y generar las keywords
     for product, brand, category in zip(products_list, brands_list, categories_list):
         # Crear el mensaje para el modelo
-        #prompt = f"Enviame solo una lista de keywords comerciales separadas por coma para el siguiente producto: {product} de la marca {brand} y categoría en {category}"
-        prompt = (f"Genera una lista concisa de keywords comerciales, separadas por comas, "
-          f"para un producto como '{product}', de la marca '{brand}', "
-          f"en la categoría '{category}'.")
+        # prompt = f"Enviame solo una lista de keywords comerciales separadas por coma para el siguiente producto: {product} de la marca {brand} y categoría en {category}"
+        prompt = (
+            f"Genera una lista concisa de keywords comerciales, separadas por comas, "
+            f"para un producto como '{product}', de la marca '{brand}', "
+            f"en la categoría '{category}'."
+        )
         # Llamar al modelo de Ollama
         response = ollama.chat(
             model="llama3.1:latest",
@@ -399,7 +429,6 @@ def generate_keywords_excel_file_2():
         # Agregar las keywords a la lista
         keywords_list.append(keywords)
 
-
     df = pd.DataFrame({"Nombre": products_list, "Keywords": keywords_list})
 
     # Guardar el DataFrame en un archivo Excel
@@ -421,14 +450,14 @@ def generation_description_exce_file():
 
         # Llamar al modelo de Ollama
         response = ollama.chat(
-        model="llama3.1:latest",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-    )
+            model="llama3.1:latest",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+        )
 
         # Extraer la descripción generada
         description = response["message"]["content"]
@@ -440,13 +469,16 @@ def generation_description_exce_file():
         descriptions_list.append(description)
 
     # Agregar las descripciones generadas como una nueva columna en el DataFrame
-    df = pd.DataFrame({"Nombre": products_list, "Descripción Comercial": descriptions_list})
+    df = pd.DataFrame(
+        {"Nombre": products_list, "Descripción Comercial": descriptions_list}
+    )
 
     df.to_excel("./excel-files/descriptions/descriptions-list.xlsx", index=False)
 
+
 def crop_margins(
-        imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha
-    ):
+    imagen_path, margen_inferior, margen_superior, margen_izquierda, margen_derecha
+):
     # Abrir la imagen
     imagen = Image.open(imagen_path)
 
@@ -509,7 +541,7 @@ def verificar_columnas_excel_de_descripciones(ruta_archivo):
     except Exception as e:
         print(f"Error al leer el archivo: {e}")
         return None
-    
+
 
 def verificar_columnas_excel_de_generacion_descripciones(ruta_archivo):
     try:
@@ -532,7 +564,11 @@ def verificar_columnas_excel_de_keywords(ruta_archivo):
         df = pd.read_excel(ruta_archivo)
 
         # Verificar si las columnas 'SKU' y 'url' están en el DataFrame
-        if "Nombre" in df.columns and "Marca" in df.columns and "Categoria" in df.columns:
+        if (
+            "Nombre" in df.columns
+            and "Marca" in df.columns
+            and "Categoria" in df.columns
+        ):
             return True
         else:
             return None
