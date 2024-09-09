@@ -122,17 +122,18 @@ async def send_download_image(
                         chat_id=update.message.chat_id,
                         document=zip_file_path,
                         disable_notification=True,
-                        write_timeout=35.0,
+                        write_timeout=60.0,
                     )
             except error.TimedOut as e:
                 await update.message.reply_text(
                         f"A timed out error occurred while sending the file {zip_file}: {e}"
                     )
+                continue
             except Exception as e:
                 await update.message.reply_text(
                         f"An error occurred while sending the file {zip_file}: {e}"
                     )
-    
+            await asyncio.sleep(6)
     except Exception as e:
         await update.message.reply_text(
             f"An error occurred: {e}"

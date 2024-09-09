@@ -126,7 +126,7 @@ def obtener_tamano_carpeta(carpeta):
 def save_images_from_excel(archivo_excel, carpeta_base_destino):
     """Extrae las URL de imágenes de un archivo Excel y guarda las imágenes en carpetas según el peso."""
 
-    TAMANO_MAXIMO_CARPETA = 20 * 1024 * 1024  # 20 MB
+    TAMANO_MAXIMO_CARPETA = 50 * 1024 * 1024  # 20 MB
     df = pd.read_excel(archivo_excel)
     numero_carpeta = 1
     carpeta_destino = os.path.join(carpeta_base_destino, f"Lote_{numero_carpeta}")
