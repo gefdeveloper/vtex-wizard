@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
+from openai import OpenAI
+import pandas as pd
 
 
 def generate_random_numbers(random_numbers_quantity: int):
@@ -195,7 +197,7 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
 
         for index, fila in df.iterrows():
             enlaces_imagen = fila["url"]
-            sku = fila["SKU"]
+            sku = str(fila["SKU"])
 
             # Verificar si el SKU contiene el carácter "/"
             if "/" in sku:
@@ -280,6 +282,7 @@ def create_excel_non_working_urls(archivo_excel, carpeta_destino):
 
     except Exception as e:
         print(f"Error al procesar el archivo Excel: {e}")
+        return None
 
 
 def format_image_excel_file():
@@ -595,3 +598,90 @@ def verificar_columnas_excel_de_imagenes_sin_formato(ruta_archivo):
 def escape_string(input_string):
     """Replaces characters '-' with '\-', and characters '.' with '\.'"""
     return re.sub(r"[-.\\]", lambda x: "\\" + x.group(), input_string)
+
+
+def generar_keywords(nombre, categoria, marca):
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    prompt = (
+        f"Genera keywords relevantes para un producto con estas características:\n"
+        f"Nombre: {nombre}\n"
+        f"Categoría: {categoria}\n"
+        f"Marca: {marca}\n"
+        "Proporciona una lista de keywords separadas por comas."
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini", messages=[{"role": "user", "content": f"{prompt}"}]
+        )
+
+        return response.choices[0].message.content
+    except Exception as e:
+        raise Exception(f"Error en la API de OpenAI: {str(e)}")
+
+
+def generar_excel_de_keywords():
+    # Leer el archivo Excel con las columnas 'Nombre', 'Categoria', y 'Marca'
+    df = pd.read_excel("./excel-files/keywords/products-list.xlsx")
+
+    # Crear una lista vacía para almacenar las keywords
+    keywords_list = []
+
+    # Iterar sobre cada fila y generar keywords
+    for index, row in df.iterrows():
+        nombre = row["Nombre"]
+        categoria = row["Categoria"]
+        marca = row["Marca"]
+
+        try:
+            keywords = generar_keywords(nombre, categoria, marca)
+            keywords_list.append(keywords)
+        except Exception as e:
+            print(f"Error al generar las keywords para {nombre}: {e}")
+            keywords_list.append("Keywords no disponibles")
+
+    # Añadir las keywords al DataFrame
+    df["Keywords"] = keywords_list
+
+    # Guardar el DataFrame actualizado en un nuevo archivo Excel
+    df.to_excel("./excel-files/keywords/keywords-list.xlsx", index=False)
+
+
+def generar_descripcion(producto):
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    prompt = f"Genera una descripción comercial en un párrafo de máximo 500 caracteres para este producto: {producto}"
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini", messages=[{"role": "user", "content": f"{prompt}"}]
+        )
+
+        return response.choices[0].message.content
+    except Exception as e:
+        raise Exception(f"Error en la API de OpenAI: {str(e)}")
+
+
+def generar_excel_de_descripciones():
+    # Leer el archivo Excel con la columna "Productos"
+    df = pd.read_excel("./excel-files/descriptions/products-list.xlsx")
+
+    # Crear una lista vacía para almacenar las descripciones
+    descripciones = []
+
+    # Iterar sobre la columna 'Productos' y generar descripciones
+    for producto in df['Nombre']:
+        try:
+            descripcion = generar_descripcion(producto)
+            descripciones.append(descripcion)
+        except Exception as e:
+            print(f"Error al generar la descripción para {producto}: {e}")
+            descripciones.append("Descripción no disponible")
+
+    # Añadir las descripciones al DataFrame
+    df['Descripción'] = descripciones
+
+    # Guardar el DataFrame actualizado en un nuevo archivo Excel
+    df.to_excel("./excel-files/descriptions/descriptions-list.xlsx", index=False)
+

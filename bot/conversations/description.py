@@ -11,6 +11,7 @@ from common.log import logger
 from bot.service import (
     verificar_columnas_excel_de_generacion_descripciones,
     generation_description_exce_file,
+    generar_excel_de_descripciones,
 )
 
 DESCRIPTION_GENERATION_EXCEL_FILE = range(1)
@@ -63,7 +64,7 @@ async def create_descriptions_excel_file(
 
     await update.message.reply_text("Excel file saved!")
     try:
-        generation_description_exce_file()
+        generar_excel_de_descripciones()
     except Exception as e:
         await update.message.reply_text(
             "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."

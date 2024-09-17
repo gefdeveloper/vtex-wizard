@@ -10,7 +10,9 @@ from telegram.ext import (
 from common.log import logger
 from bot.service import (
     generate_keywords_excel_file_2,
+    generate_keywords_excel_file,
     verificar_columnas_excel_de_keywords,
+    generar_excel_de_keywords
 )
 from bot.handlers import FIVE, ELEVEN
 
@@ -61,7 +63,7 @@ async def create_keywords_excel_file(
         return KEYWORDS_EXCEL_FILE
     await update.message.reply_text("Excel file saved!")
     try:
-        generate_keywords_excel_file_2()
+        generar_excel_de_keywords()
     except Exception as e:
         await update.message.reply_text(
             "An error occurred. Please correct the sent file and resend it. If the error persists, contact @gcasasolah for assistance."
