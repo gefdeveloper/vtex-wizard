@@ -1,4 +1,4 @@
-import re, random, requests, os, ollama
+import re, random, requests, os, ollama, logging
 import pandas as pd
 from bs4 import BeautifulSoup
 from PIL import Image
@@ -36,10 +36,97 @@ def escape_string(input_string: str):
     return re.sub(r"[-.]", lambda x: "\\" + x.group(), input_string)
 
 
+def parse_html(element, text_parts):
+    """
+    Processes an HTML element and formats its content into plain text.
+    
+    Args:
+        element (Tag): A BeautifulSoup element representing an HTML tag.
+        text_parts (list): List that accumulates the processed text parts.
+    """
+    # Manejo de listas desordenadas <ul> y <li>
+    if element.name == "ul":  # Si es una lista desordenada
+        for li in element.find_all(
+            "li", recursive=False
+        ):  # Recorre solo los <li> hijos directos
+            text_parts.append(
+                f"• {li.get_text(strip=True)}\n"
+            )  # Añadir viñeta y el texto del <li>
+
+    # Manejo de listas ordenadas <ol> y <li>
+    elif element.name == "ol":  # Si es una lista ordenada
+        for idx, li in enumerate(
+            element.find_all("li", recursive=False), 1
+        ):  # Enumerar los <li>
+            text_parts.append(
+                f"{idx}. {li.get_text(strip=True)}\n"
+            )  # Añadir el número y el texto del <li>
+
+    # Manejo de títulos <h1>, <h2>, etc.
+    elif element.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
+        text_parts.append(
+            f"\n{element.get_text(strip=True).upper()}\n"
+        )  # Títulos en mayúsculas
+
+    # Manejo de párrafos <p>
+    elif element.name == "p":
+        text_parts.append(
+            f"{element.get_text(strip=True)}\n\n"
+        )  # Añadir el texto del párrafo con doble salto de línea
+
+    # Manejo de texto en negrita <strong> o <b>
+    elif element.name in ["strong", "b"]:
+        text_parts.append(
+            f"**{element.get_text(strip=True)}**"
+        )  # Añadir negritas con **
+
+    # Manejo de <span> para extraer el texto
+    elif element.name == "span":
+        text_parts.append(
+            f"{element.get_text(strip=True)}"
+        )  # Extraer el texto del <span> sin formato especial
+
+    # Manejo de otros elementos que contengan texto
+    elif element.string and element.name not in ["ul", "ol", "li"]:
+        text_parts.append(
+            element.string.strip()
+        )  # Añadir solo el contenido de texto, si no es lista
+
+    # Procesar etiquetas anidadas (pero solo si no es una etiqueta de texto)
+    if element.name and element.name not in [
+        "ul",
+        "ol",
+        "li",
+    ]:  # Evita duplicar <li> y <ul>/<ol>
+        for child in element.children:
+            parse_html(child, text_parts)
+
+
 def html_to_text(html):
-    """Convert a snippet of HTML into plain text."""
-    soup = BeautifulSoup(html, "html.parser")
-    return soup.get_text().replace("_x000D_", "")
+    """
+    Convert an HTML fragment into plain text, even when closing tags are missing.
+
+    Args:
+        html (str): An HTML fragment to be converted into plain text.
+
+    Returns:
+        str: The content of the HTML converted to plain text.
+    """
+    soup = BeautifulSoup(
+        html, "html.parser"
+    )  # El parser 'html.parser' manejará el HTML mal formado
+
+    text_parts = []  # Lista para acumular las partes del texto
+
+    # Iniciar el procesamiento del HTML desde el nivel más alto
+    root_element = (
+        soup.body if soup.body else soup
+    )  # Si no hay body, recorrer desde el nivel superior
+    for elem in root_element.children:
+        parse_html(elem, text_parts)
+
+    # Combinar las partes del texto y devolver el resultado
+    return "".join(text_parts).replace("_x000D_", "").strip()
 
 
 def change_html_to_text():
@@ -618,7 +705,8 @@ def generar_keywords(nombre, categoria, marca):
 
         return response.choices[0].message.content
     except Exception as e:
-        raise Exception(f"Error en la API de OpenAI: {str(e)}")
+        logging.error(f"Error en la API de OpenAI: {str(e)}")
+        return "Ocurrió un error al generar las keywords"
 
 
 def generar_excel_de_keywords():
@@ -637,6 +725,7 @@ def generar_excel_de_keywords():
         try:
             keywords = generar_keywords(nombre, categoria, marca)
             keywords_list.append(keywords)
+            print(f"Se generó los keywords para {nombre}")
         except Exception as e:
             print(f"Error al generar las keywords para {nombre}: {e}")
             keywords_list.append("Keywords no disponibles")
@@ -660,7 +749,8 @@ def generar_descripcion(producto):
 
         return response.choices[0].message.content
     except Exception as e:
-        raise Exception(f"Error en la API de OpenAI: {str(e)}")
+        logging(f"Error en la API de OpenAI: {str(e)}")
+        return "Ocurrió un error al generar la descripción"
 
 
 def generar_excel_de_descripciones():
@@ -675,6 +765,7 @@ def generar_excel_de_descripciones():
         try:
             descripcion = generar_descripcion(producto)
             descripciones.append(descripcion)
+            print(f"Se generó la descripción para {producto}")
         except Exception as e:
             print(f"Error al generar la descripción para {producto}: {e}")
             descripciones.append("Descripción no disponible")
